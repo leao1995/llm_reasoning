@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm_reasoning"
+version = "0.0.1"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "jsonlines",
+    "jsonargparse",
+    "omegaconf",
+    "retry",
+    "boto3",
+    "litellm==1.52.14",
+    "vllm==0.6.4",
+    "transformers==4.46.3",
+    "torch_geometric",
+    "scipy",
+    "seaborn",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

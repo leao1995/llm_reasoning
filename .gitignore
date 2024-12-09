@@ -1,0 +1,7 @@
+data/
+exp/
+notebooks/
+scripts/
+test/
+__pycache__/
+*.egg-info
