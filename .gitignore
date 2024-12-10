@@ -3,5 +3,6 @@ exp/
 notebooks/
 scripts/
 test/
+lib/
 __pycache__/
 *.egg-info

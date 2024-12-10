@@ -1,10 +1,13 @@
+import logging
 import requests
 import numpy as np
 from scipy.special import logsumexp
 
 from llm_reasoning.llm.base import LLM, LLMResponse, InferenceConfig
 
-class vLLMModel(LLM):
+logger = logging.getLogger(__name__)
+
+class vLLMChatModel(LLM):
     model_name: str
     port: int
     
@@ -53,7 +56,8 @@ def truncate_generations(text: str, token_probs: list[dict], stop_sequences: lis
             - truncated_text (str): The truncated string.
             - truncated_token_probs (list[dict]): The truncated token probabilities.
     '''
-    assert text == ''.join(token['token'] for token in token_probs)
+    if text != ''.join(token['token'] for token in token_probs):
+        logger.warning(f"tokens does not match decoded text:\n---{text}\n---\n{''.join(token['token'] for token in token_probs)}\n---")
     
     # Strip leading whitespace from text
     stripped_text = text.lstrip()

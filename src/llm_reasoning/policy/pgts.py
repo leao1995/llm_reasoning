@@ -189,6 +189,7 @@ class TreeSearchPolicy(BaseModel):
     def load(self):
         if os.path.exists(os.path.join(self.policy_dir, f"{self.policy_name}.pth")):
             self.policy_network.load_state_dict(torch.load(os.path.join(self.policy_dir, f"{self.policy_name}.pth"), map_location="cpu"))
+            self.policy_network.to(self.policy_device)
             logger.info(f"loading from {self.policy_dir}")
         else:
             logger.warning(f"model weights does not exist, using random weights")
@@ -203,20 +204,14 @@ class TreeSearchPolicy(BaseModel):
             self.policy_network.eval()
     
     def _prepare_inputs(self, nodes: list[Node]):
-        try:
-            batch = [
-                {
-                    "node_features": torch.stack(node.node_features),
-                    "edge_index": torch.tensor(node.edge_index).t(),
-                    "current_node_idx": node.node_id,
-                }
-                for node in nodes
-            ]
-        except Exception as e:
-            print([f.shape for f in nodes[0].node_features])
-            print([t[0] for t in nodes[0].trace])
-            print([t[1].to_response() for t in nodes[0].trace])
-            raise e
+        batch = [
+            {
+                "node_features": torch.stack(node.node_features),
+                "edge_index": torch.tensor(node.edge_index).t(),
+                "current_node_idx": node.node_id,
+            }
+            for node in nodes
+        ]
         if self.policy_type == "gnn":
             batch_inputs = gnn.collate_fn(batch)
         elif self.policy_type == "xformer":
@@ -366,7 +361,7 @@ class PGTS(Policy):
                 traj = ppo_advantage(traj, training_config.ppo_gamma, training_config.gae_lambda)
                 buffer.add(traj, batch_size=1)
                 reward_hist.append(total_reward)
-                logger.info(f"rollout {step}-{i}")
+                logger.info(f"rollout {step}-{i} total_reward {total_reward}")
             self._learn(
                 buffer, optimizer,
                 training_config.training_iters_per_step, 
@@ -379,6 +374,7 @@ class PGTS(Policy):
             if mean(reward_hist[-training_config.num_rollout_per_step:]) >= best_reward:
                 best_reward = mean(reward_hist[-training_config.num_rollout_per_step:]) 
                 self.policy.save()
+                logger.info(f"best_reward: {best_reward}")
                 
         if training_config.save_last:
             self.policy.save()

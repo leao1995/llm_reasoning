@@ -16,9 +16,11 @@ dependencies = [
     "litellm==1.52.14",
     "vllm==0.6.4",
     "transformers==4.46.3",
+    "flash_attn",
     "torch_geometric",
     "scipy",
     "seaborn",
+    "pyvis",
 ]
 
 [tool.setuptools.packages.find]

@@ -29,7 +29,7 @@ class Action(BaseModel):
 class State(BaseModel):
     model_config = ConfigDict(frozen=True, strict=True, arbitrary_types_allowed=True)
     
-    problem: str
+    problem: list[dict]
     answer: str
     trace: list[Action]
     embedding: Optional[torch.Tensor] = None
@@ -40,10 +40,23 @@ class State(BaseModel):
         '''
         pass
     
+    def __hash__(self):
+        '''
+        make the state hashable to use as dict key
+        '''
+        pass
+    
+    def __eq__(self, other):
+        '''
+        enable comparing two states
+        '''
+        pass
+    
     def to_messages(self):
         '''
         convert the action trajectory to messages fro LLM input
         '''
+        pass
     
     def to_response(self):
         '''

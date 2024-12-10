@@ -76,6 +76,12 @@ class GSM8KState(State):
     def __str__(self):
         return "\n\n".join(msg["content"] for msg in self.to_messages())
     
+    def __hash__(self):
+        return hash(str(self))
+    
+    def __eq__(self, other):
+        return isinstance(other, GSM8KState) and str(self) == str(other)
+    
     def to_messages(self):
         messages = self.problem
         if self.trace:
