@@ -13,7 +13,7 @@ class TreeVisualizer:
             else:
                 prop[k] = getattr(node, k)
         
-        return "<br>".join(f"{k}: {v}" for k, v in prop.items())
+        return "\n\n".join(f"{k}: {v}" for k, v in prop.items())
 
     def visualize(self, root, output_file):
         net = Network(directed=True)
@@ -35,4 +35,4 @@ class TreeVisualizer:
     
 info_file = "exp/qwen2.5_7b/gsm8k/mcts_debug/auxiliary.pth"
 info = torch.load(info_file)
-TreeVisualizer(["state", "reward"]).visualize(info[0]["root"], "debug.html")
+TreeVisualizer(["state", "reward", "Q", "visits"]).visualize(info[0]["root"], "debug.html")

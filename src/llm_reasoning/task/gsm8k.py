@@ -4,8 +4,9 @@ from typing import Optional
 from pydantic import ConfigDict
 from datasets import Dataset, load_dataset
 from omegaconf import OmegaConf
-from collections import Counter
+from collections import Counter, defaultdict
 import torch
+import math
 from statistics import mean
 
 from llm_reasoning.task.base import Task, Solution, Action, State
@@ -59,12 +60,16 @@ def check_answer_correctness(ground_truth: str, response: str):
 
 class GSM8KAction(Action):
     text: str
+    finish_reason: str
     log_prob: Optional[float] = None
     confidence: Optional[float] = None
     embedding: Optional[torch.Tensor] = None
     
     def __str__(self):
         return self.text
+    
+    def is_final_action(self):
+        return self.finish_reason == "stop"
     
     
 class GSM8KState(State):
@@ -96,7 +101,7 @@ class GSM8KState(State):
     def is_terminal(self):
         if not self.trace:
             return False
-        return bool(re.search(r"\b[Tt]he answer is\b", self.trace[-1].text))
+        return bool(re.search(r"\b[Tt]he answer is\b", self.trace[-1].text)) or self.trace[-1].is_final_action()
 
 
 class GSM8K(Task):
@@ -159,7 +164,7 @@ class GSM8K(Task):
         
         reward = 0.0
         if 'action_logprob' in self.reward_coeff and action.log_prob is not None:
-            reward += action.log_prob * self.reward_coeff["action_logprob"]
+            reward += math.exp(action.log_prob) * self.reward_coeff["action_logprob"] # exp to avoid negative reward
             info["action_logprob"] = action.log_prob
         if 'action_confidence' in self.reward_coeff and action.confidence is not None:
             reward += action.confidence * self.reward_coeff["action_confidence"]
@@ -194,6 +199,7 @@ class GSM8K(Task):
         return [
             GSM8KAction(
                 text=response.text,
+                finish_reason=response.finish_reason,
                 log_prob=sum(response.logprobs) if response.logprobs is not None else None,
                 confidence=mean(response.confidences) if response.confidences is not None else None,
                 embedding=response.embedding,
@@ -221,8 +227,10 @@ class GSM8K(Task):
             
         # multiple answers with weights
         elif all(solution.weight is not None for solution in solutions):
-            solution = max(solutions, key=lambda x: x.weight)
-            response = extract_answer(solution.text)
+            weights = defaultdict(float)
+            for solution in solutions:
+                weights[extract_answer(solution.text)] += solution.weight
+            response = max(weights.items(), key=lambda x: x[1])[0]
             
         # multiple answers without weights
         else:

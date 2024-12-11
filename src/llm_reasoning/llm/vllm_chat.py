@@ -22,26 +22,29 @@ class vLLMChatModel(LLM):
             "top_logprobs": 5,
             "add_generation_prompt": False if messages[-1]["role"] == "assistant" else True,
             "continue_final_message": True if messages[-1]["role"] == "assistant" else False,
+            "chat_template": inference_config.chat_template, # custom chat template
         }
         response = requests.post(f"http://localhost:{self.port}/v1/chat/completions", json=payload)
         response.raise_for_status()
         output_text = response.json()["choices"][0]["message"]["content"]
         if messages[-1]["role"] == "assistant" and output_text.startswith(messages[-1]["content"]):
             output_text = output_text[len(messages[-1]["content"]):]
+        finish_reason = response.json()["choices"][0]["finish_reason"]
         output_probs = response.json()["choices"][0]["logprobs"]["content"] # logprob for output tokens
-        output_text, output_probs = truncate_generations(output_text, output_probs, inference_config.stop_sequences)
+        output_text, output_probs, finish_reason = truncate_generations(output_text, output_probs, finish_reason, inference_config.stop_sequences)
         logprobs = [token["logprob"] for token in output_probs]
         confidences = [np.exp(token["logprob"]-logsumexp([tok["logprob"] for tok in token["top_logprobs"]])) for token in output_probs]
         perplexity = np.exp(-np.mean(logprobs))
         
         return LLMResponse(
             text=output_text,
+            finish_reason=finish_reason,
             perplexity=perplexity,
             logprobs=logprobs,
             confidences=confidences,
         )
         
-def truncate_generations(text: str, token_probs: list[dict], stop_sequences: list[str]):
+def truncate_generations(text: str, token_probs: list[dict], finish_reason: str, stop_sequences: list[str]):
     '''
     Truncates the input text and corresponding token probabilities at the first occurrence of any stop sequence,
     skipping leading stop sequences to avoid empty generations.
@@ -91,6 +94,7 @@ def truncate_generations(text: str, token_probs: list[dict], stop_sequences: lis
         if stop_index != -1:
             # Truncate the text at the first valid stop sequence
             text = text[:stop_index]
+            finish_reason = "truncation"
             
             # Calculate the corresponding token length
             cumulative_length = 0
@@ -110,4 +114,4 @@ def truncate_generations(text: str, token_probs: list[dict], stop_sequences: lis
             token_probs = token_probs[:truncated_token_length]
     
     # Return the original text and token probabilities if no stop sequence is found
-    return text, token_probs
+    return text, token_probs, finish_reason

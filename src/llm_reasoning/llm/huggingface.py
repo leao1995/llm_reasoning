@@ -32,6 +32,7 @@ class HuggingFaceModel(LLM):
                 tokenize=False, 
                 add_generation_prompt=False if messages[-1]["role"] == "assistant" else True,
                 continue_final_message=True if messages[-1]["role"] == "assistant" else False,
+                chat_template=inference_config.chat_template, # custom chat template
             )
             for messages in batch_messages
         ]
@@ -63,12 +64,13 @@ class HuggingFaceModel(LLM):
             for i in range(len(batch_prompts)):
                 generated_token_ids = outputs.sequences[i][num_input_tokens:]
                 text = self._tokenizer.decode(generated_token_ids, skip_special_tokens=True)
+                finish_reason = "stop" if self._tokenizer.eos_token_id in generated_token_ids else "length"
                 
                 tokens = []
                 logprobs = []
                 confidences = []
                 for step_logits, token_id in zip(outputs.logits, generated_token_ids):
-                    if token_id == self._tokenizer.pad_token_id:
+                    if token_id in [self._tokenizer.pad_token_id, self._tokenizer.eos_token_id]:
                         break
                     scores = torch.nn.functional.log_softmax(step_logits[i], dim=-1)
                     logprob = scores[token_id]
@@ -78,7 +80,7 @@ class HuggingFaceModel(LLM):
                     confidences.append(confidence.item())
                     
                 token_probs = [{"token": t, "logprob": p, "confidence": c} for t, p, c in zip(tokens, logprobs, confidences)]
-                text, token_probs, last_token_idx = truncate_generations(text, token_probs, inference_config.stop_sequences)
+                text, token_probs, finish_reason, last_token_idx = truncate_generations(text, token_probs, finish_reason, inference_config.stop_sequences)
                 logprobs = [token["logprob"] for token in token_probs]
                 confidences = [token["confidence"] for token in token_probs]
                     
@@ -91,6 +93,7 @@ class HuggingFaceModel(LLM):
                 responses.append(
                     LLMResponse(
                         text=text,
+                        finish_reason=finish_reason,
                         logprobs=logprobs,
                         confidences=confidences,
                         perplexity=perplexity,
@@ -121,7 +124,7 @@ class HuggingFaceModel(LLM):
         
         return embedding
     
-def truncate_generations(text: str, token_probs: list[dict], stop_sequences: list[str]):
+def truncate_generations(text: str, token_probs: list[dict], finish_reason: str, stop_sequences: list[str]):
     '''
     Truncates the input text and corresponding token probabilities at the first occurrence of any stop sequence,
     skipping leading stop sequences to avoid empty generations.
@@ -173,6 +176,7 @@ def truncate_generations(text: str, token_probs: list[dict], stop_sequences: lis
         if stop_index != -1:
             # Truncate the text at the first valid stop sequence
             text = text[:stop_index]
+            finish_reason = "truncation"
             
             # Calculate the corresponding token length
             cumulative_length = 0
@@ -193,4 +197,4 @@ def truncate_generations(text: str, token_probs: list[dict], stop_sequences: lis
             token_probs = token_probs[:truncated_token_length]
     
     # Return the original text and token probabilities if no stop sequence is found
-    return text, token_probs, last_token_idx
+    return text, token_probs, finish_reason, last_token_idx

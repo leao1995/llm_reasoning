@@ -11,12 +11,14 @@ class InferenceConfig(BaseModel):
     top_p: float = 1.0
     max_tokens: int = 512
     stop_sequences: list[str] = []
+    chat_template: Optional[str] = None
 
     
 class LLMResponse(BaseModel):
     model_config = ConfigDict(frozen=True, strict=True, arbitrary_types_allowed=True)
     
     text: str
+    finish_reason: str
     logprobs: Optional[list[float]] = None
     confidences: Optional[list[float]] = None
     perplexity: Optional[float] = None

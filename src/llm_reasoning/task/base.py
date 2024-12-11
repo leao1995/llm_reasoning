@@ -18,12 +18,16 @@ class Action(BaseModel):
     model_config = ConfigDict(frozen=True, strict=True, arbitrary_types_allowed=True)
     
     text: str
+    finish_reason: str
     log_prob: Optional[float] = None
     confidence: Optional[float] = None
     embedding: Optional[torch.Tensor] = None
     
     def __str__(self):
         return self.text
+    
+    def is_final_action(self):
+        return self.finish_reason == "stop"
     
 
 class State(BaseModel):
