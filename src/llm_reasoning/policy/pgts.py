@@ -1,4 +1,5 @@
 import os
+import asyncio
 import logging
 from omegaconf import OmegaConf
 from pydantic import BaseModel, ConfigDict
@@ -54,18 +55,23 @@ class TreeSearchEnv:
         self.node = root
         self.num_steps = 0
         
-    def _continue(self):
+    async def _expand(self):
+        actions: list[Action] = self.env.propose_actions(self.node.state, self.max_breadth)
+        # sort based on action logprob
+        actions = sorted(actions, key=lambda x: x.log_prob or 0, reverse=True)
+        steps = [asyncio.create_task(self.env.step(self.node.state, action)) for action in actions]
+        outputs = await asyncio.gather(*steps)
+            
+        for next_state, reward, _, _ in outputs:
+            self.node.add_child(Node(next_state, reward, self.node, self.node.depth+1))
+        
+    async def _continue(self):
         '''
         continue from the current node to its child node
         if the current node is not expanded, we need to first expand it
         '''
         if not self.node.children:
-            actions: list[Action] = self.env.propose_actions(self.node.state, self.max_breadth)
-            # sort based on action logprob
-            actions = sorted(actions, key=lambda x: x.log_prob or 0, reverse=True)
-            for action in actions:
-                next_state, reward, _, _ = self.env.step(self.node.state, action)
-                self.node.add_child(Node(next_state, reward, self.node, self.node.depth+1))
+            await self._expand()
         
         next_node = self.node.select_child()
         interm_reward = next_node.reward
@@ -109,9 +115,9 @@ class TreeSearchEnv:
         
         return next_node, reward
     
-    def step(self, action: int):
+    async def step(self, action: int):
         if action == 0: # continue
-            next_node, reward = self._continue()
+            next_node, reward = await self._continue()
         elif action == 1:
             next_node, reward = self._branch()
         else:
@@ -274,7 +280,7 @@ class PGTS(Policy):
             max_search_steps=policy_config.max_search_steps,
         )
         
-    def _rollout(self, state: State):
+    async def _rollout(self, state: State):
         env = TreeSearchEnv(
             env=self.env,
             max_steps=self.max_search_steps,
@@ -289,7 +295,7 @@ class PGTS(Policy):
         total_reward = 0.0
         while not done:
             res = self.policy([node])
-            next_node, reward, done, info = env.step(res["act"][0].item())
+            next_node, reward, done, info = await env.step(res["act"][0].item())
             trajectory.append({
                 "node": [node],
                 "act": res["act"].data,
@@ -303,8 +309,9 @@ class PGTS(Policy):
         return trajectory, total_reward, node
         
     def run(self, state: State) -> tuple[list[Solution], dict]:
-        trajectory, total_reward, final_node = self._rollout(state)
+        trajectory, total_reward, final_node = asyncio.run(self._rollout(state))
         info = {
+            "root": trajectory[0]["node"][0],
             "trajectory": trajectory,
             "total_reward": total_reward,
         }
@@ -341,7 +348,24 @@ class PGTS(Policy):
                 entropy.append(ent_loss.data.cpu().item())
             
             logger.info(f"actor_loss: {mean(actor_loss)} critic_loss: {mean(critic_loss)} entropy: {mean(entropy)}")
-
+    
+    async def _collect(self, buffer, training_config):
+        rollouts = []
+        for i in range(training_config.num_rollout_per_step):
+            idx = random.choice(range(self.env.size))
+            init_state = self.env.init(idx)
+            rollouts.append(asyncio.create_task(self._rollout(init_state)))
+        outputs = await asyncio.gather(*rollouts)
+        
+        total_reward = 0
+        for i, (traj, traj_reward, _) in enumerate(outputs):
+            traj = ppo_advantage(traj, training_config.ppo_gamma, training_config.gae_lambda)
+            buffer.add(traj, batch_size=1)
+            total_reward += traj_reward
+            logger.info(f"rollout {i} - traj_reward {traj_reward}")
+        
+        return total_reward / training_config.num_rollout_per_step
+    
     def train(self, training_config: OmegaConf):
         self.policy.set_status("train")
         optimizer = torch.optim.Adam(self.policy.get_trainable_parameters(), lr=training_config.lr)
@@ -354,14 +378,8 @@ class PGTS(Policy):
         best_reward = -1e6
         reward_hist = []
         for step in range(training_config.training_steps):
-            for i in range(training_config.num_rollout_per_step):
-                idx = random.choice(range(self.env.size))
-                init_state = self.env.init(idx)
-                traj, total_reward, _ = self._rollout(init_state)
-                traj = ppo_advantage(traj, training_config.ppo_gamma, training_config.gae_lambda)
-                buffer.add(traj, batch_size=1)
-                reward_hist.append(total_reward)
-                logger.info(f"rollout {step}-{i} total_reward {total_reward}")
+            total_reward = asyncio.run(self._collect(buffer, training_config))
+            reward_hist.append(total_reward)
             self._learn(
                 buffer, optimizer,
                 training_config.training_iters_per_step, 
@@ -371,12 +389,12 @@ class PGTS(Policy):
                 training_config.ratio_clip,
                 training_config.grad_norm
             )
-            if mean(reward_hist[-training_config.num_rollout_per_step:]) >= best_reward:
-                best_reward = mean(reward_hist[-training_config.num_rollout_per_step:]) 
+            if total_reward >= best_reward:
+                best_reward = total_reward
                 self.policy.save()
-                logger.info(f"best_reward: {best_reward}")
+                logger.info(f"step {step} best_reward: {best_reward}")
                 
         if training_config.save_last:
             self.policy.save()
             
-        plot_reward(reward_hist, training_config.num_rollout_per_step * 10, os.path.join(self.policy.policy_dir, f"{self.policy.policy_name}.png"))
+        plot_reward(reward_hist, 10, os.path.join(self.policy.policy_dir, f"{self.policy.policy_name}.png"))

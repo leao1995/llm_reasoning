@@ -150,7 +150,7 @@ class GSM8K(Task):
         
         return init_state
     
-    def step(self, state: GSM8KState, action: GSM8KAction) -> tuple[GSM8KState, float, bool, dict]:
+    async def step(self, state: GSM8KState, action: GSM8KAction) -> tuple[GSM8KState, float, bool, dict]:
         next_state = GSM8KState(
             problem=state.problem,
             answer=state.answer,
@@ -200,18 +200,23 @@ class GSM8K(Task):
             GSM8KAction(
                 text=response.text,
                 finish_reason=response.finish_reason,
-                log_prob=sum(response.logprobs) if response.logprobs is not None else None,
-                confidence=mean(response.confidences) if response.confidences is not None else None,
+                log_prob=sum(response.logprobs) if response.logprobs else None,
+                confidence=mean(response.confidences) if response.confidences else None,
                 embedding=response.embedding,
             )
             for response in llm_responses
         ]
         
     def eval_state(self, state: GSM8KState):
-        raise NotImplementedError()
+        problem = state.problem[-1]["content"]
+        response = state.to_response()
+        
     
     def eval_action(self, state: GSM8KState, action: GSM8KAction):
-        raise NotImplementedError()
+        problem = state.problem[-1]["content"]
+        previous_response = state.to_response()
+        current_step = action.text
+        
     
     def eval_solution(self, answer: str, solutions: list[Solution]):
         ground_truth = answer.split('#### ')[1].replace(',', '')

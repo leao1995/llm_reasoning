@@ -1,6 +1,7 @@
 import math
 from omegaconf import OmegaConf
 import logging
+import asyncio
 
 from llm_reasoning.task.base import State, Action, Task, Solution
 from llm_reasoning.policy.base import Policy
@@ -74,7 +75,7 @@ class MCTS(Policy):
 
             # Expansion
             if not node.state.is_terminal() and node.depth < self.depth_limit:
-                self.expand(node)
+                asyncio.run(self.expand(node))
                 logger.debug(f"Expanded {node.state}")
                 
             # Simulation
@@ -103,12 +104,14 @@ class MCTS(Policy):
             
         return node
                 
-    def expand(self, node):
+    async def expand(self, node):
         actions: list[Action] = self.env.propose_actions(node.state, self.breadth_limit)
         # sort based on action logprob
         actions = sorted(actions, key=lambda x: x.log_prob or 0, reverse=True)
-        for action in actions:
-            next_state, reward, _, _ = self.env.step(node.state, action)
+        steps = [asyncio.create_task(self.env.step(node.state, action)) for action in actions]
+        outputs = await asyncio.gather(*steps)
+        
+        for next_state, reward, _, _ in outputs:
             node.add_child(Node(next_state, reward, node, node.depth+1))
         
     def simulate(self, node) -> Node:
@@ -117,7 +120,7 @@ class MCTS(Policy):
         '''        
         while not node.state.is_terminal() and node.depth < self.depth_limit:
             if not node.children:
-                self.expand(node)
+                asyncio.run(self.expand(node))
             node = node.children[0]
             
         logger.debug(f"Simulation: {node}")
