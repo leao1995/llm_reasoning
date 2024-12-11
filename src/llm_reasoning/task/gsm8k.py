@@ -88,7 +88,7 @@ class GSM8KState(State):
         return isinstance(other, GSM8KState) and str(self) == str(other)
     
     def to_messages(self):
-        messages = self.problem
+        messages = self.problem.copy() # copy to avoid changing the problem
         if self.trace:
             assistant_prefill = self.to_response() + ACTION_STEP_SEPARATOR
             messages.append({"role": "assistant", "content": assistant_prefill})

@@ -24,6 +24,8 @@ class HuggingFaceModel(LLM):
             attn_implementation="flash_attention_2"
         ).to(self.device)
         self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        if self._tokenizer.pad_token_id is None:
+            self._tokenizer.pad_token_id = self._tokenizer.eos_token_id
     
     def batch_call(self, batch_messages: list[list[dict]], inference_config: InferenceConfig) -> list[LLMResponse]:
         chat_prompts = [

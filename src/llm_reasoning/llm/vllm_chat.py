@@ -24,6 +24,7 @@ class vLLMChatModel(LLM):
             "continue_final_message": True if messages[-1]["role"] == "assistant" else False,
             "chat_template": inference_config.chat_template, # custom chat template
         }
+        logger.debug(f"Input message to vLLM:\n{messages}")
         response = requests.post(f"http://localhost:{self.port}/v1/chat/completions", json=payload)
         response.raise_for_status()
         output_text = response.json()["choices"][0]["message"]["content"]
