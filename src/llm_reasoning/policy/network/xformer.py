@@ -64,8 +64,9 @@ class XformerPolicy(nn.Module):
             batch_first=True
         )
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-        self.actor = nn.Linear(hidden_dim, num_actions)
-        self.critic = nn.Linear(hidden_dim, 1)
+        self.constraints = nn.Linear(num_actions, hidden_dim)
+        self.actor = nn.Linear(hidden_dim * 2, num_actions)
+        self.critic = nn.Linear(hidden_dim * 2, 1)
         
     def forward(self, node_features, attention_mask, current_node_idx, action_masks):
         """
@@ -90,14 +91,21 @@ class XformerPolicy(nn.Module):
         batch_indices = torch.arange(current_node_idx.size(0), device=current_node_idx.device)
         current_node_embedding = x[batch_indices, current_node_idx] # Shape: [batch_size, hidden_dim]
         
+        # Encode the action constraints
+        c = self.constraints(action_masks.to(x))
+        c = torch.relu(c)
+        
+        # policy inputs
+        policy_inputs = torch.cat([current_node_embedding, c], dim=1)
+        
         # Compute action logits and value prediction
-        logits = self.actor(current_node_embedding)
+        logits = self.actor(policy_inputs)
         inf_logits = torch.ones_like(logits) * -1e6
         logits = torch.where(action_masks, logits, inf_logits)
         dist = torch.distributions.Categorical(logits=logits)
         act = dist.sample()
         logp = dist.log_prob(act)
-        vpred = self.critic(current_node_embedding).squeeze(1)
+        vpred = self.critic(policy_inputs).squeeze(1)
         
         return {
             'dist': dist,

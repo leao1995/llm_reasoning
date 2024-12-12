@@ -34,6 +34,9 @@ class Node:
         
     def select_child(self):
         return self.children[self.child_idx]
+    
+    def has_unvisited_child(self):
+        return len(self.children) == 0 or self.child_idx < len(self.children) - 1
 
 
 class TreeSearchEnv:
@@ -150,9 +153,7 @@ class TreeSearchEnv:
         self.node = next_node
         
         done = is_terminal or self.num_steps >= self.max_steps
-        
-        print(f"{action} {next_node.depth} {next_node.node_id} {len(next_node.node_features)} {min([idx for e in next_node.edge_index for idx in e])} {max([idx for e in next_node.edge_index for idx in e])}")
-        
+
         return next_node, reward, done, {}
 
 
@@ -249,6 +250,7 @@ class TreeSearchPolicy(BaseModel):
         action_masks = []
         for node in nodes:
             mask = torch.zeros(self.num_actions).bool()
+            # depth specific constraints
             if node.depth == 0: # cannot branch the root node, only valid action is continue
                 mask[:1] = 1
             elif node.depth == 1: # no previous steps to backtrack, can continue or branch
@@ -257,6 +259,13 @@ class TreeSearchPolicy(BaseModel):
                 mask[1:] = 1
             else: # continue and branch are valid, and can backtrack depth-1 steps
                 mask[:node.depth+1] = 1
+            # breadth specific constraints
+            if node.parent is not None and not node.parent.has_unvisited_child():
+                mask[1] = 0 # node does not have sibling nodes, cannot branch
+            for backtrack_step in range(1, node.depth):
+                node = node.parent
+                if not node.parent.has_unvisited_child():
+                    mask[backtrack_step+1] = 0 # cannot backtrack
             action_masks.append(mask)
         action_masks = torch.stack(action_masks).to(self.policy_device)
         
