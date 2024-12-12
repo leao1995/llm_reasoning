@@ -10,7 +10,6 @@ from collections import namedtuple
 
 from llm_reasoning.task.base import State, Action, Task, Solution
 from llm_reasoning.policy.base import Policy
-
 from llm_reasoning.policy.network import gnn, xformer 
 from llm_reasoning.policy.utils import plot_reward, ppo_advantage, ReplayBuffer
 
@@ -51,9 +50,16 @@ class TreeSearchEnv:
         root.node_features.append(root.state.embedding)
         root.edge_index = []
         
+        # reset current node
         self.root = root
         self.node = root
+        # reset num_steps
         self.num_steps = 0
+        # reset global graph representations
+        self.node_id = 0
+        self.trace = [(-1, root.state)]
+        self.node_features = [root.state.embedding]
+        self.edge_index = []
         
     async def _expand(self):
         actions: list[Action] = self.env.propose_actions(self.node.state, self.max_breadth)
@@ -127,15 +133,25 @@ class TreeSearchEnv:
         
         self.num_steps += 1
         
-        # update node properties
-        next_node.node_id = self.num_steps
-        next_node.trace = self.node.trace + [(action, next_node.state)]
-        next_node.node_features = self.node.node_features + [next_node.state.embedding]
-        next_node.edge_index = self.node.edge_index + [(next_node.parent.node_id, next_node.node_id), (next_node.node_id, next_node.parent.node_id)]
+        # update node properties. branch and backtrack may hit the breadth limit, therefore next node might have been visited
+        if next_node.node_id is None:
+            # update graph representation
+            self.node_id += 1
+            next_node.node_id = self.node_id # do not change node id if it's visited before
+            self.trace.append((action, next_node.state))
+            self.node_features.append(next_node.state.embedding)
+            self.edge_index.extend([(next_node.parent.node_id, next_node.node_id), (next_node.node_id, next_node.parent.node_id)])
+        
+        # record graph representation as node properties, these properties will be updated even for seen nodes
+        next_node.trace = self.trace.copy()
+        next_node.node_features = self.node_features.copy()
+        next_node.edge_index = self.edge_index.copy()
         
         self.node = next_node
         
         done = is_terminal or self.num_steps >= self.max_steps
+        
+        print(f"{action} {next_node.depth} {next_node.node_id} {len(next_node.node_features)} {min([idx for e in next_node.edge_index for idx in e])} {max([idx for e in next_node.edge_index for idx in e])}")
         
         return next_node, reward, done, {}
 
