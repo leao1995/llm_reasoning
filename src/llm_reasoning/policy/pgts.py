@@ -22,6 +22,7 @@ class Node:
         self.info = info
         self.parent = parent
         self.children = []
+        self.visits = 0
         self.depth = depth
         self.child_idx = 0
         # additional properties for policy
@@ -136,6 +137,8 @@ class TreeSearchEnv:
         is_terminal = next_node.state.is_terminal()
         
         self.num_steps += 1
+        
+        next_node.visits += 1
         
         # update node properties. branch and backtrack may hit the breadth limit, therefore next node might have been visited
         if next_node.node_id is None:

@@ -222,13 +222,16 @@ class GSM8K(Task):
         
         return init_state
     
-    async def step(self, state: GSM8KState, action: GSM8KAction) -> tuple[GSM8KState, float, bool, dict]:
-        next_state = GSM8KState(
+    def transition(self, state: GSM8KState, action: GSM8KAction) -> GSM8KState:
+        return GSM8KState(
             problem=state.problem,
             answer=state.answer,
             trace=state.trace + [action],
             embedding=action.embedding
         )
+    
+    async def step(self, state: GSM8KState, action: GSM8KAction) -> tuple[GSM8KState, float, bool, dict]:
+        next_state = self.transition(state, action)
         
         done = next_state.is_terminal()
         

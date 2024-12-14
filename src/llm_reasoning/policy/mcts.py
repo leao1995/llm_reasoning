@@ -2,6 +2,7 @@ import math
 from omegaconf import OmegaConf
 import logging
 import asyncio
+from functools import partial
 
 from llm_reasoning.task.base import State, Action, Task, Solution
 from llm_reasoning.policy.base import Policy
@@ -9,7 +10,8 @@ from llm_reasoning.policy.base import Policy
 logger = logging.getLogger(__name__)
 
 class Node:
-    def __init__(self, state, reward, info, parent=None, depth=0):
+    def __init__(self, step_fn, state, reward, info, parent=None, depth=0):
+        self.step_fn = step_fn
         self.state = state
         self.reward = reward # rewards from the action that leads to this state
         self.info = info # info from the action that leads to this state
@@ -63,27 +65,24 @@ class MCTS(Policy):
     def run(self, state: State) -> tuple[list[Solution], dict]:
         logger.debug("Start MCTS")
         
-        root = Node(state, 0, {})
-        
-        selections = []
+        root = Node(None, state, 0, {})
         
         for i in range(self.mcts_iterations):
             logger.debug(f"Iteration: {i}")
             # Selection
             node = self.select(root)
-            selections.append(node)
             logger.debug(f"Selection: {node.state}")
 
             # Expansion
             if not node.state.is_terminal() and node.depth < self.depth_limit:
-                asyncio.run(self.expand(node))
+                self.expand(node)
                 logger.debug(f"Expanded {node.state}")
                 
             # Simulation
             node = self.simulate(node)
             
             # Backpropagation
-            self.backpropagate(node)
+            asyncio.run(self.backpropagate(node))
             
         terminal_state_dict = self.traverse(root)
         logger.debug(f"terminal_states: {terminal_state_dict}")
@@ -94,7 +93,6 @@ class MCTS(Policy):
         ]
         info = {
             "root": root,
-            "selections": selections
         }
         
         return solutions, info
@@ -105,33 +103,50 @@ class MCTS(Policy):
             
         return node
                 
-    async def expand(self, node):
+    def expand(self, node):
         actions: list[Action] = self.env.propose_actions(node.state, self.breadth_limit)
         # sort based on action logprob
         actions = sorted(actions, key=lambda x: x.log_prob or 0, reverse=True)
-        steps = [asyncio.create_task(self.env.step(node.state, action)) for action in actions]
-        outputs = await asyncio.gather(*steps)
-        
-        for next_state, reward, _, info in outputs:
-            node.add_child(Node(next_state, reward, info, node, node.depth+1))
+        for action in actions:
+            next_state = self.env.transition(node.state, action) # state is needed to check stop condition
+            step_fn = partial(self.env.step, node.state, action) # This will create a coroutine, not a task, dealy execute to backpropagation
+            node.add_child(Node(step_fn, next_state, None, None, node, node.depth+1))
         
     def simulate(self, node) -> Node:
         '''
         Different from typical RL applications, here simulate will actually expand the tree to reuse the LLM calls.
-        '''        
+        '''
         while not node.state.is_terminal() and node.depth < self.depth_limit:
             if not node.children:
-                asyncio.run(self.expand(node))
+                self.expand(node)
             node = node.children[0]
             
         logger.debug(f"Simulation: {node}")
             
         return node
     
-    def backpropagate(self, node: Node):
-        while node is not None:
-            node.update()
-            node = node.parent
+    async def backpropagate(self, node: Node):
+        # execute the step function
+        nodes_to_execute = []
+        cur_node = node
+        while cur_node is not None:
+            if cur_node.reward is None and cur_node.step_fn is not None:
+                nodes_to_execute.append(cur_node)
+            cur_node = cur_node.parent
+        outputs = await asyncio.gather(*[n.step_fn() for n in nodes_to_execute])
+        
+        # update reward
+        for n, (next_state, reward, _, info) in zip(nodes_to_execute, outputs):
+            n.step_fn = None # cleanup coroutine
+            n.state = next_state
+            n.reward = reward
+            n.info = info
+        
+        # backpropagation
+        cur_node = node
+        while cur_node is not None:
+            cur_node.update()
+            cur_node = cur_node.parent
             
     def traverse(self, node) -> dict[State, float]:
         terminal_state_dict = {}
@@ -140,7 +155,8 @@ class MCTS(Policy):
             if node.state.is_terminal():
                 terminal_state_dict[node.state] = total_reward
                 return
-            for child in node.children:
+            visited_childred = [child for child in node.children if child.visits > 0]
+            for child in visited_childred:
                 dfs(child, total_reward + child.reward)
                 
         dfs(node, 0)
