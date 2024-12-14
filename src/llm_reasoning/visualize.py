@@ -39,9 +39,9 @@ class TreeVisualizer:
 def main(config_file: str, num_plots=10):
     configs = OmegaConf.load(config_file)
     if configs.policy.name == "mcts":
-        properties = ["state", "reward", "Q", "visits"]
+        properties = ["state", "reward", "info", "Q", "visits"]
     elif configs.policy.name == "pgts":
-        properties = ["state", "reward", "node_id"]
+        properties = ["state", "reward", "info", "node_id"]
     else:
         raise NotImplementedError()
     

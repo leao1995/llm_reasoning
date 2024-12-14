@@ -1,7 +1,6 @@
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
 import torch
-from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 
 class InferenceConfig(BaseModel):
@@ -39,20 +38,15 @@ class LLM(BaseModel):
     
     def batch_call(self, batch_messages: list[list[dict]], inference_config: InferenceConfig) -> list[LLMResponse]:
         with ThreadPoolExecutor() as executor:
-            responses = list(
-                tqdm(
-                    executor.map(
-                        self.call,
-                        batch_messages,
-                        [inference_config] * len(batch_messages),
-                    ),
-                    total=len(batch_messages),
-                    desc="llm calls",
-                )
-            )
+            responses = list(executor.map(
+                self.call,
+                batch_messages,
+                [inference_config] * len(batch_messages),
+            ))
         return responses
     
-    def get_prompt_embedding(self, messages: list[dict]):
+    def get_prompt_embedding(self, messages: list[dict], inference_config: InferenceConfig):
         return None
         
-        
+    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig):
+        return None

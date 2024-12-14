@@ -11,6 +11,8 @@ from statistics import mean
 
 from llm_reasoning.task.base import Task, Solution, Action, State
 from llm_reasoning.llm.base import LLM, LLMResponse, InferenceConfig
+from llm_reasoning.judge.llm_judge import LLMJudge
+from llm_reasoning.judge.post_processor import LikertScaleProcessor
 
 logger = logging.getLogger(__name__)
     
@@ -38,6 +40,52 @@ PROMPT_TEMPLATE = "Question: {question}\nLet's think step by step\nAnswer:"
 ACTION_STEP_SEPARATOR = "\n"
 
 MAX_STEP_TOKENS = 64
+
+# adapted from autorace
+ANSWER_SELFEVAL_SYSTEM_PROMPT = """You are a teacher who evaluates students' answers based on specific criteria. You will be provided with a question and a student's answer with step-by-step reasoning. You are required to check the correctness of the reasoning chains step by step. The criterions are as follows:
+
+**Accuracy in Mathematical Operations:** Ensure calculations are correct and follow logical mathematical principles.
+
+**Understanding the Problem Statement:** Comprehend the details and conditions of the question accurately.
+
+**Correct Application of Mathematical Concepts:** Apply the right mathematical formulas, operations, or concepts to solve the problem.
+
+**Unit Conversion and Appropriateness:** When required, correctly convert units and use appropriate units in the answer.
+
+**Final Answer Relevance:** Ensure the final answer directly addresses the question asked, and is presented clearly and concisely.
+
+**Logical Reasoning and Step-by-Step Explanation:** The answer should include a logical, step-by-step explanation that demonstrates how the final answer was reached."""
+
+ANSWER_SELFEVAL_USER_PROMPT = """Below is a question and an answer from a student:
+
+Question: {QUESTION}
+
+Student answer:{ANSWER}
+
+Please check the answer through each criterion, and make sure you carefully examine each reasoning step. Finally, if there is any step that fails the verification, output 'The answer is incorrect', otherwise output 'The answer is correct'."""
+
+
+STEP_SELFEVAL_SYSTEM_PROMPT = """You are a teacher who evaluates students' answers based on specific criteria. You will be provided with a question, the student's previous reasoning steps, and the current reasoning step. Your task is to assess the current reasoning step based on the following criteria:
+
+**Accuracy in Mathematical Operations:** Ensure calculations are correct and follow logical mathematical principles.
+
+**Understanding the Problem Statement:** Comprehend the details and conditions of the question accurately.
+
+**Correct Application of Mathematical Concepts:** Apply the right mathematical formulas, operations, or concepts to solve the problem.
+
+**Unit Conversion and Appropriateness:** When required, correctly convert units and use appropriate units in the answer.
+
+**Logical Reasoning:** The reasoning step should follow a logical flow from the previous steps and the problem statement."""
+
+STEP_SELFEVAL_USER_PROMPT = """Below is a question and an answer from a student:
+
+Question: {QUESTION}
+
+Previous reasoning steps: {PREVIOUS_STEPS}
+
+Current reasoning step: {CURRENT_STEP}
+
+Please evaluate the current reasoning step based on the criteria mentioned above. If the step satisfies all the criteria, output 'The step is correct'. If any criterion is not met, output 'The step is incorrect'."""
 
 
 def extract_answer(text: str):
@@ -110,18 +158,42 @@ class GSM8K(Task):
     model: LLM
     inference_config: InferenceConfig
     reward_coeff: dict[str, float]
+    answer_judge: LLMJudge
+    step_judge: LLMJudge
     
     @classmethod
     def from_config(cls, model: LLM, inference_config: InferenceConfig, task_config: OmegaConf):
         # test data
         data = load_dataset("gsm8k", "main", split=task_config.split)
         
+        answer_judge = LLMJudge(
+            model=model,
+            inference_config=inference_config,
+            system_prompt=ANSWER_SELFEVAL_SYSTEM_PROMPT,
+            system_prompt_vars=[],
+            user_prompt=ANSWER_SELFEVAL_USER_PROMPT,
+            user_prompt_vars=["QUESTION", "ANSWER"],
+            post_processor=LikertScaleProcessor(scales={"The answer is incorrect": 0, "The answer is correct": 1})
+        )
+        
+        step_judge = LLMJudge(
+            model=model,
+            inference_config=inference_config,
+            system_prompt=STEP_SELFEVAL_SYSTEM_PROMPT,
+            system_prompt_vars=[],
+            user_prompt=STEP_SELFEVAL_USER_PROMPT,
+            user_prompt_vars=["QUESTION", "PREVIOUS_STEPS", "CURRENT_STEP"],
+            post_processor=LikertScaleProcessor(scales={"The step is incorrect": 0, "The step is correct": 1})
+        )
+        
         return cls(
             data=data,
             num_shot=task_config.num_shot,
             model=model,
             inference_config=inference_config,
-            reward_coeff=task_config.reward_coeff
+            reward_coeff=task_config.reward_coeff,
+            answer_judge=answer_judge,
+            step_judge=step_judge,
         )
         
     @property
@@ -145,7 +217,7 @@ class GSM8K(Task):
             problem=messages,
             answer=test_example["answer"],
             trace=[],
-            embedding=self.model.get_prompt_embedding(messages=messages)
+            embedding=self.model.get_prompt_embedding(messages=messages, inference_config=InferenceConfig())
         )
         
         return init_state
@@ -165,7 +237,7 @@ class GSM8K(Task):
         reward = 0.0
         if 'action_logprob' in self.reward_coeff and action.log_prob is not None:
             reward += math.exp(action.log_prob) * self.reward_coeff["action_logprob"] # exp to avoid negative reward
-            info["action_logprob"] = action.log_prob
+            info["action_logprob"] = math.exp(action.log_prob)
         if 'action_confidence' in self.reward_coeff and action.confidence is not None:
             reward += action.confidence * self.reward_coeff["action_confidence"]
             info["action_confidence"] = action.confidence
@@ -211,12 +283,22 @@ class GSM8K(Task):
         problem = state.problem[-1]["content"]
         response = state.to_response()
         
+        score = self.answer_judge.judge(QUESTION=problem, ANSWER=response)
+        if score is None: # parsing error
+            score = 0
+            
+        return score
     
     def eval_action(self, state: GSM8KState, action: GSM8KAction):
         problem = state.problem[-1]["content"]
         previous_response = state.to_response()
         current_step = action.text
         
+        score = self.step_judge.judge(QUESTION=problem, PREVIOUS_STEPS=previous_response, CURRENT_STEP=current_step)
+        if score is None: # parsing error
+            score = 0
+            
+        return score
     
     def eval_solution(self, answer: str, solutions: list[Solution]):
         ground_truth = answer.split('#### ')[1].replace(',', '')

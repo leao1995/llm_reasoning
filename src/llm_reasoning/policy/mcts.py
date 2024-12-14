@@ -9,9 +9,10 @@ from llm_reasoning.policy.base import Policy
 logger = logging.getLogger(__name__)
 
 class Node:
-    def __init__(self, state, reward, parent=None, depth=0):
+    def __init__(self, state, reward, info, parent=None, depth=0):
         self.state = state
-        self.reward = reward
+        self.reward = reward # rewards from the action that leads to this state
+        self.info = info # info from the action that leads to this state
         self.parent = parent
         self.children = []
         self.visits = 0
@@ -62,7 +63,7 @@ class MCTS(Policy):
     def run(self, state: State) -> tuple[list[Solution], dict]:
         logger.debug("Start MCTS")
         
-        root = Node(state, 0)
+        root = Node(state, 0, {})
         
         selections = []
         
@@ -111,8 +112,8 @@ class MCTS(Policy):
         steps = [asyncio.create_task(self.env.step(node.state, action)) for action in actions]
         outputs = await asyncio.gather(*steps)
         
-        for next_state, reward, _, _ in outputs:
-            node.add_child(Node(next_state, reward, node, node.depth+1))
+        for next_state, reward, _, info in outputs:
+            node.add_child(Node(next_state, reward, info, node, node.depth+1))
         
     def simulate(self, node) -> Node:
         '''

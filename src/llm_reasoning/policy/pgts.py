@@ -16,9 +16,10 @@ from llm_reasoning.policy.utils import plot_reward, ppo_advantage, ReplayBuffer
 logger = logging.getLogger(__name__)
 
 class Node:
-    def __init__(self, state: State, reward: float, parent=None, depth=0):
+    def __init__(self, state: State, reward: float, info: dict, parent=None, depth=0):
         self.state = state
-        self.reward = reward
+        self.reward = reward # reward from the action that leads to this state
+        self.info = info
         self.parent = parent
         self.children = []
         self.depth = depth
@@ -71,8 +72,8 @@ class TreeSearchEnv:
         steps = [asyncio.create_task(self.env.step(self.node.state, action)) for action in actions]
         outputs = await asyncio.gather(*steps)
             
-        for next_state, reward, _, _ in outputs:
-            self.node.add_child(Node(next_state, reward, self.node, self.node.depth+1))
+        for next_state, reward, _, info in outputs:
+            self.node.add_child(Node(next_state, reward, info, self.node, self.node.depth+1))
         
     async def _continue(self):
         '''
@@ -313,7 +314,7 @@ class PGTS(Policy):
             max_breadth=self.breadth_limit,
             action_costs=self.search_action_costs
         )
-        root = Node(state, 0)
+        root = Node(state, 0, {})
         env.init(root)
         node, done = env.node, False
         trajectory = []

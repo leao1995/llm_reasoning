@@ -2,6 +2,7 @@ import logging
 import requests
 import numpy as np
 from scipy.special import logsumexp
+from concurrent.futures import ThreadPoolExecutor
 
 from llm_reasoning.llm.base import LLM, LLMResponse, InferenceConfig
 
@@ -44,6 +45,41 @@ class vLLMChatModel(LLM):
             logprobs=logprobs,
             confidences=confidences,
         )
+        
+    def _get_prompt_logprobs(self, messages: list[dict], inference_config: InferenceConfig):
+        payload = {
+            "model": self.model_name,
+            "messages": messages,
+            "temperature": inference_config.temperature,
+            "max_tokens": 1, # has to generate 1 token
+            "top_p": inference_config.top_p,
+            "add_generation_prompt": False if messages[-1]["role"] == "assistant" else True,
+            "continue_final_message": True if messages[-1]["role"] == "assistant" else False,
+            "chat_template": inference_config.chat_template, # custom chat template
+            "prompt_logprobs": 0, # only return the logprob for the given token
+        }
+        
+        response = requests.post(f"http://localhost:{self.port}/v1/chat/completions", json=payload)
+        response.raise_for_status()
+        
+        return response.json()["prompt_logprobs"]
+        
+    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig):
+        assert messages[-1]["role"] == "user"
+        
+        batch_messages = [messages] + [messages + [{"role": "assistant", "content": cand}] for cand in answer_candidates]
+        with ThreadPoolExecutor() as executor:
+            prompt_logprobs = list(executor.map(
+                self._get_prompt_logprobs,
+                batch_messages,
+                [inference_config] * len(batch_messages),
+            ))
+        prefix_len = len(prompt_logprobs[0])
+        seq_log_prob = [sum(next(iter(t.values()))['logprob'] for t in prompt_logprobs[i+1][prefix_len:]) for i in range(len(answer_candidates))]
+        seq_prob = [np.exp(logprob) for logprob in seq_log_prob]
+        
+        return [p / sum(seq_prob) for p in seq_prob]
+        
         
 def truncate_generations(text: str, token_probs: list[dict], finish_reason: str, stop_sequences: list[str]):
     '''

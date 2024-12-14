@@ -1,6 +1,5 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from tqdm import tqdm
 import logging
 
 from llm_reasoning.llm.base import LLM, LLMResponse, InferenceConfig
@@ -40,7 +39,7 @@ class HuggingFaceModel(LLM):
         ]
         
         responses = []
-        for start in tqdm(range(0, len(chat_prompts), self.batch_size), desc="llm calls"):
+        for start in range(0, len(chat_prompts), self.batch_size):
             batch_prompts = chat_prompts[start:start+self.batch_size]
             tokenized_inputs = self._tokenizer(
                 batch_prompts, 
@@ -90,7 +89,7 @@ class HuggingFaceModel(LLM):
                 # The hidden state is the one used to generate this token
                 # therefore, for the first token, it's the hidden state of the inputs, with shape (batch_size, #input_tokens, dim)
                 # for other tokens, it's of shape (batch_size, 1, dim)
-                embedding = outputs.hidden_states[last_token_idx][-1][i][-1].data.cpu().float() # token index -> last layer -> batch_idx -> last token
+                embedding = outputs.hidden_states[last_token_idx][-1][i][-1].data.cpu().float() # generation index -> last layer -> batch_idx -> last token
                 
                 responses.append(
                     LLMResponse(
@@ -105,26 +104,67 @@ class HuggingFaceModel(LLM):
                     
         return responses
     
-    def get_prompt_embedding(self, messages: list[dict]) -> torch.Tensor:
+    def get_prompt_embedding(self, messages: list[dict], inference_config: InferenceConfig) -> torch.Tensor:
         assert messages[-1]["role"] == "user"
         
         chat_prompt = self._tokenizer.apply_chat_template(
             messages, 
-            tokenize=False, 
+            tokenize=True, 
             add_generation_prompt=False,
+            continue_final_message=True,
+            chat_template=inference_config.chat_template,
+            return_tensors="pt"
+        ).to(self.device)
+        with torch.no_grad():
+            outputs = self._model(chat_prompt, output_hidden_states=True)
+        embedding = outputs.hidden_states[-1][0][-1].data.cpu().float() # last layer -> first batch idx -> last token
+        
+        return embedding
+    
+    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig):
+        assert messages[-1]["role"] == "user"
+        
+        prefix = self._tokenizer.apply_chat_template(
+            messages, 
+            tokenize=True, 
+            add_generation_prompt=True,
+            chat_template=inference_config.chat_template,
         )
+        
+        batch_messages = [messages + [{"role": "assistant", "content": cand}] for cand in answer_candidates]
+
+        chat_prompts = [
+            self._tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_genertion_prompt=False,
+                continue_final_message=True,
+                chat_template=inference_config.chat_template,
+            )
+            for messages in batch_messages
+        ]
         tokenized_inputs = self._tokenizer(
-            chat_prompt, 
+            chat_prompts, 
             padding=True, 
             truncation=True, 
             add_special_tokens=False, # chat_template already added special tokens
             return_tensors="pt"
         ).to(self.device)
-        with torch.no_grad():
-            outputs = self._model(**tokenized_inputs, output_hidden_states=True)
-        embedding = outputs.hidden_states[-1][0][-1].data.cpu().float() # last layer -> first batch id -> last token
         
-        return embedding
+        with torch.no_grad():
+            outputs = self._model(**tokenized_inputs)
+        
+        log_probs = torch.nn.functional.log_softmax(outputs.logits[:, len(prefix)-1:-1], dim=-1)
+        candidate_ids = tokenized_inputs.input_ids[:, len(prefix):]
+        
+        log_probs = log_probs.gather(2, candidate_ids.unsqueeze(-1)).squeeze(-1)
+        pad_mask = (candidate_ids == self._tokenizer.pad_token_id) | (candidate_ids == self._tokenizer.eos_token_id)
+        log_probs[pad_mask] = 0
+        
+        seq_log_probs = log_probs.sum(dim=1)
+        answer_probs = torch.exp(seq_log_probs - torch.logsumexp(seq_log_probs, dim=0))
+        
+        return answer_probs.data.cpu().float().tolist()
     
 def truncate_generations(text: str, token_probs: list[dict], finish_reason: str, stop_sequences: list[str]):
     '''
