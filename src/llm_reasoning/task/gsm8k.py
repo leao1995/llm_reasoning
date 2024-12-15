@@ -11,8 +11,10 @@ from statistics import mean
 
 from llm_reasoning.task.base import Task, Solution, Action, State
 from llm_reasoning.llm.base import LLM, LLMResponse, InferenceConfig
+from llm_reasoning.judge.base import BaseJudge
 from llm_reasoning.judge.llm_judge import LLMJudge
 from llm_reasoning.judge.post_processor import LikertScaleProcessor
+from llm_reasoning.judge.likelihood_judge import LikelihoodJudge
 
 logger = logging.getLogger(__name__)
     
@@ -158,33 +160,60 @@ class GSM8K(Task):
     model: LLM
     inference_config: InferenceConfig
     reward_coeff: dict[str, float]
-    answer_judge: LLMJudge
-    step_judge: LLMJudge
+    answer_judge: BaseJudge
+    step_judge: BaseJudge
     
     @classmethod
     def from_config(cls, model: LLM, inference_config: InferenceConfig, task_config: OmegaConf):
         # test data
         data = load_dataset("gsm8k", "main", split=task_config.split)
         
-        answer_judge = LLMJudge(
-            model=model,
-            inference_config=inference_config,
-            system_prompt=ANSWER_SELFEVAL_SYSTEM_PROMPT,
-            system_prompt_vars=[],
-            user_prompt=ANSWER_SELFEVAL_USER_PROMPT,
-            user_prompt_vars=["QUESTION", "ANSWER"],
-            post_processor=LikertScaleProcessor(scales={"The answer is incorrect": 0, "The answer is correct": 1})
-        )
-        
-        step_judge = LLMJudge(
-            model=model,
-            inference_config=inference_config,
-            system_prompt=STEP_SELFEVAL_SYSTEM_PROMPT,
-            system_prompt_vars=[],
-            user_prompt=STEP_SELFEVAL_USER_PROMPT,
-            user_prompt_vars=["QUESTION", "PREVIOUS_STEPS", "CURRENT_STEP"],
-            post_processor=LikertScaleProcessor(scales={"The step is incorrect": 0, "The step is correct": 1})
-        )
+        # judge for intermediate steps and final answer
+        if task_config.judge_type == "llm":
+            answer_judge = LLMJudge(
+                model=model,
+                inference_config=inference_config,
+                system_prompt=ANSWER_SELFEVAL_SYSTEM_PROMPT,
+                system_prompt_vars=[],
+                user_prompt=ANSWER_SELFEVAL_USER_PROMPT,
+                user_prompt_vars=["QUESTION", "ANSWER"],
+                post_processor=LikertScaleProcessor(scales={"The answer is incorrect": 0, "The answer is correct": 1})
+            )
+            
+            step_judge = LLMJudge(
+                model=model,
+                inference_config=inference_config,
+                system_prompt=STEP_SELFEVAL_SYSTEM_PROMPT,
+                system_prompt_vars=[],
+                user_prompt=STEP_SELFEVAL_USER_PROMPT,
+                user_prompt_vars=["QUESTION", "PREVIOUS_STEPS", "CURRENT_STEP"],
+                post_processor=LikertScaleProcessor(scales={"The step is incorrect": 0, "The step is correct": 1})
+            )
+        elif task_config.judge_type == "likelihood":
+            answer_judge = LikelihoodJudge(
+                model=model,
+                inference_config=inference_config,
+                system_prompt=ANSWER_SELFEVAL_SYSTEM_PROMPT,
+                system_prompt_vars=[],
+                user_prompt=ANSWER_SELFEVAL_USER_PROMPT,
+                user_prompt_vars=["QUESTION", "ANSWER"],
+                candidates=["The answer is incorrect", "The answer is correct"],
+                score_idx=1
+            )
+            
+            step_judge = LikelihoodJudge(
+                model=model,
+                inference_config=inference_config,
+                system_prompt=STEP_SELFEVAL_SYSTEM_PROMPT,
+                system_prompt_vars=[],
+                user_prompt=STEP_SELFEVAL_USER_PROMPT,
+                user_prompt_vars=["QUESTION", "PREVIOUS_STEPS", "CURRENT_STEP"],
+                candidates=["The step is incorrect", "The step is correct"],
+                score_idx=1
+            )
+        else:
+            answer_judge = None
+            step_judge = None
         
         return cls(
             data=data,

@@ -1,13 +1,13 @@
 import logging
 from retry import retry
-from pydantic import BaseModel
 
 from llm_reasoning.llm.base import LLM, LLMResponse, InferenceConfig
+from llm_reasoning.judge.base import BaseJudge
 from llm_reasoning.judge.post_processor import BaseProcessor, PostProcessingException
 
 logger = logging.getLogger(__name__)
 
-class LLMJudge(BaseModel):
+class LLMJudge(BaseJudge):
     model: LLM
     inference_config: InferenceConfig
     
