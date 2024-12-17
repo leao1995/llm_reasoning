@@ -17,7 +17,8 @@ from llm_reasoning.judge.post_processor import LikertScaleProcessor
 from llm_reasoning.judge.likelihood_judge import LikelihoodJudge
 
 logger = logging.getLogger(__name__)
-    
+
+# adapted from opencompass
 IN_CONTEXT_EXAMPLES = [
     {
         "question": "Question: Angelo and Melanie want to plan how many hours over the next week they should study together for their test next week. They have 2 chapters of their textbook to study and 4 worksheets to memorize. They figure out that they should dedicate 3 hours to each chapter of their textbook and 1.5 hours for each worksheet. If they plan to study no more than 4 hours each day, how many days should they plan to study total over the next week if they take a 10-minute break every hour, include 3 10-minute snack breaks each day, and 30 minutes for lunch each day?\nLet's think step by step\nAnswer:",
@@ -62,7 +63,7 @@ ANSWER_SELFEVAL_USER_PROMPT = """Below is a question and an answer from a studen
 
 Question: {QUESTION}
 
-Student answer:{ANSWER}
+Student answer: {ANSWER}
 
 Please check the answer through each criterion, and make sure you carefully examine each reasoning step. Finally, if there is any step that fails the verification, output 'The answer is incorrect', otherwise output 'The answer is correct'."""
 
@@ -90,6 +91,7 @@ Current reasoning step: {CURRENT_STEP}
 Please evaluate the current reasoning step based on the criteria mentioned above. If the step satisfies all the criteria, output 'The step is correct'. If any criterion is not met, output 'The step is incorrect'."""
 
 
+# These postprocessing functions are adapted from opencompass
 def extract_answer(text: str):
     numbers = re.findall(r'\-?\d+\.\d+|\-?\d+', text)
     if not numbers:
@@ -160,8 +162,8 @@ class GSM8K(Task):
     model: LLM
     inference_config: InferenceConfig
     reward_coeff: dict[str, float]
-    answer_judge: BaseJudge
-    step_judge: BaseJudge
+    answer_judge: Optional[BaseJudge]
+    step_judge: Optional[BaseJudge]
     
     @classmethod
     def from_config(cls, model: LLM, inference_config: InferenceConfig, task_config: OmegaConf):

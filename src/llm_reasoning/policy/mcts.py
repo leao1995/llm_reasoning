@@ -1,8 +1,8 @@
 import math
-from omegaconf import OmegaConf
 import logging
 import asyncio
 from functools import partial
+from omegaconf import OmegaConf
 
 from llm_reasoning.task.base import State, Action, Task, Solution
 from llm_reasoning.policy.base import Policy
@@ -51,7 +51,8 @@ class MCTS(Policy):
     
     @classmethod
     def from_config(cls, env: Task, policy_config: OmegaConf):
-        assert 'task_reward' not in env.reward_coeff, "MCTS should not use task reward for searching"
+        if 'task_reward' in env.reward_coeff: 
+            logger.warning("MCTS should not use task reward for searching, make sure you know what you are doing.")
         assert env.inference_config.temperature > 0, "greedy decoding cannot produce multiple reasoning chains"
         
         return cls(

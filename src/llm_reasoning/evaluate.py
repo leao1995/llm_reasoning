@@ -47,11 +47,17 @@ def evaluate(configs: OmegaConf, task: Task, policy: Policy):
         outputs.append(solutions)
         auxiliary.append(info)
         metrics.append(metric)
+        # save intermediate results
+        if index % 10 == 0:
+            torch.save(outputs, os.path.join(configs.experiment.exp_dir, "outputs.pth"))
+            torch.save(auxiliary, os.path.join(configs.experiment.exp_dir, "auxiliary.pth"))
+            torch.save(metrics, os.path.join(configs.experiment.exp_dir, "metrics.pth"))
+            logger.info(f"index: {index} metrics: {mean(metrics)}")
     torch.save(outputs, os.path.join(configs.experiment.exp_dir, "outputs.pth"))
     torch.save(auxiliary, os.path.join(configs.experiment.exp_dir, "auxiliary.pth"))
     torch.save(metrics, os.path.join(configs.experiment.exp_dir, "metrics.pth"))
     
-    logging.info(f"metrics: {mean(metrics)}")
+    logger.info(f"metrics: {mean(metrics)}")
     
 def main(config_file: str):
     configs = OmegaConf.load(config_file)
