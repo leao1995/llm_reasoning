@@ -27,7 +27,7 @@ def collate_fn(batch):
     
     # Padded node features
     batch_node_features, _ = to_dense_batch(
-        torch.cat(node_features_list),
+        torch.cat(node_features_list, dim=0),
         batch=torch.repeat_interleave(
             torch.arange(batch_size), 
             torch.tensor([f.size(0) for f in node_features_list])
@@ -35,16 +35,22 @@ def collate_fn(batch):
     )
     
     # Create attention mask for policy
-    attention_mask = torch.ones((batch_size, max_nodes, max_nodes), dtype=torch.bool)
+    ## Initialize attention mask (default: all False, allowing all attention)
+    attention_mask = torch.zeros((batch_size, max_nodes, max_nodes), dtype=torch.bool)
+    ## Create padding_mask (default: True for padded positions)
+    padding_mask = torch.ones((batch_size, max_nodes), dtype=torch.bool)
     for i, (edge_index, node_features) in enumerate(zip(edge_index_list, node_features_list)):
         num_nodes = node_features.size(0)
-        adj_matrix = torch.zeros((num_nodes, num_nodes), dtype=torch.bool)
-        adj_matrix[edge_index[0], edge_index[1]] = True
+        adj_matrix = torch.eye(num_nodes, dtype=torch.bool)
+        if edge_index.numel() > 0:
+            adj_matrix[edge_index[0], edge_index[1]] = True
         attention_mask[i, :num_nodes, :num_nodes] = ~adj_matrix
+        padding_mask[i, :num_nodes] = False
         
     return {
         "node_features": batch_node_features,
         "attention_mask": attention_mask,
+        "padding_mask": padding_mask,
         "current_node_idx": current_node_indices
     }
 
@@ -68,11 +74,12 @@ class XformerPolicy(nn.Module):
         self.actor = nn.Linear(hidden_dim * 2, num_actions)
         self.critic = nn.Linear(hidden_dim * 2, 1)
         
-    def forward(self, node_features, attention_mask, current_node_idx, action_masks):
+    def forward(self, node_features, attention_mask, padding_mask, current_node_idx, action_masks):
         """
         Args:
             node_features (Tensor): Node features of shape [batch_size, seq_len, feature_dim].
             attention_mask (Tensor): Binary mask for attention, shape [batch_size, seq_len, seq_len]. True indicates attention is not allowed.
+            padding_mask (Tensor): Binary maks for padding, shape [batch_size, seq_len]. True indicates padded nodes where attention is not allowed.
             current_node_indices (Tensor): Indices of the current nodes in each batch, shape [batch_size].
             action_masks: Tensor of shape[batch_size, num_actions] 1 indicates valid actions
 
@@ -85,7 +92,7 @@ class XformerPolicy(nn.Module):
         attention_mask = attention_mask.unsqueeze(1).expand(-1, self.num_heads, -1, -1).reshape(-1, attention_mask.shape[1], attention_mask.shape[2])
         
         # transformer
-        x = self.encoder(x, mask=attention_mask)
+        x = self.encoder(x, mask=attention_mask, src_key_padding_mask=padding_mask)
         
         # Select features corresponding to current nodes
         batch_indices = torch.arange(current_node_idx.size(0), device=current_node_idx.device)
