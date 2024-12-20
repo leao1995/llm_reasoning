@@ -38,9 +38,7 @@ def evaluate(configs: OmegaConf, task: Task, policy: Policy):
     outputs = []
     auxiliary = []
     metrics = []
-    configs.experiment.max_task_size = configs.experiment.max_task_size if hasattr(configs.experiment, "max_task_size") else np.inf
-    task_size = min(task.size, configs.experiment.max_task_size)
-    for index in tqdm(range(task_size), total=task_size, desc="evaluating"):
+    for index in tqdm(range(task.size), total=task.size, desc="evaluating"):
         init_state = task.init(index)
         solutions, info = policy.run(init_state)
         metric = task.eval_solution(init_state.answer, solutions)

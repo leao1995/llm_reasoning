@@ -72,15 +72,16 @@ class MCTS(Policy):
             logger.debug(f"Iteration: {i}")
             # Selection
             node = self.select(root)
-            logger.debug(f"Selection: {node.state}")
+            logger.debug(f"Selection")
 
             # Expansion
             if not node.state.is_terminal() and node.depth < self.depth_limit:
                 self.expand(node)
-                logger.debug(f"Expanded {node.state}")
+                logger.debug(f"Expanded")
                 
             # Simulation
             node = self.simulate(node)
+            logger.debug(f"Simulation")
             
             # Backpropagation
             asyncio.run(self.backpropagate(node))
@@ -103,7 +104,7 @@ class MCTS(Policy):
             node = node.best_child(self.exploration_coeff)
             
         return node
-                
+        
     def expand(self, node):
         actions: list[Action] = self.env.propose_actions(node.state, self.breadth_limit)
         # sort based on action logprob
@@ -122,8 +123,6 @@ class MCTS(Policy):
                 self.expand(node)
             node = node.children[0]
             
-        logger.debug(f"Simulation: {node}")
-            
         return node
     
     async def backpropagate(self, node: Node):
@@ -135,6 +134,7 @@ class MCTS(Policy):
                 nodes_to_execute.append(cur_node)
             cur_node = cur_node.parent
         outputs = await asyncio.gather(*[n.step_fn() for n in nodes_to_execute])
+        logger.debug(f"Execute step function: {len(nodes_to_execute)}")
         
         # update reward
         for n, (next_state, reward, _, info) in zip(nodes_to_execute, outputs):
@@ -148,6 +148,7 @@ class MCTS(Policy):
         while cur_node is not None:
             cur_node.update()
             cur_node = cur_node.parent
+        logger.debug("Backpropagate")
             
     def traverse(self, node) -> dict[State, float]:
         terminal_state_dict = {}

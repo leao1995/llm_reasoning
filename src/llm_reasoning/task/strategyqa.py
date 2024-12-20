@@ -182,6 +182,8 @@ class StrategyQA(Task):
         raw_data = load_dataset("wics/strategy-qa", split="test")
         datasets = raw_data.train_test_split(test_size=1000, shuffle=True, seed=42)
         data = datasets[task_config.split]
+        if task_config.max_num_instances > 0:
+            data = data.select(range(min(task_config.max_num_instances, len(data))))
         
         # judge for intermediate steps and final answer
         if task_config.judge_type == "llm":

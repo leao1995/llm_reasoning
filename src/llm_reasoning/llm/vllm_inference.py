@@ -5,6 +5,7 @@ import logging
 import requests
 import torch
 import numpy as np
+from copy import deepcopy
 from scipy.special import logsumexp
 from concurrent.futures import ThreadPoolExecutor
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -60,11 +61,12 @@ class vLLMInferenceModel(LLM):
         confidences = [np.exp(token["logprob"]-logsumexp([tok["logprob"] for tok in token["top_logprobs"]])) for token in output_probs]
         perplexity = np.exp(-np.mean(logprobs))
         # update message to obtain embeddings
-        updated_messages = messages.copy()
+        updated_messages = deepcopy(messages) # has to use deepcopy since we will change the content
         if updated_messages[-1]["role"] == "assistant": 
             updated_messages[-1]["content"] = updated_messages[-1]["content"] + output_text
         else:
             updated_messages.append({"role": "assistant", "content": output_text})
+        # TODO: This may give OOM error when calling in parallel in multiple threads
         embedding = self.get_prompt_embedding(updated_messages, inference_config)
         
         return LLMResponse(
@@ -95,13 +97,13 @@ class vLLMInferenceModel(LLM):
         payload = {
             "model": self.model_name,
             "messages": messages,
-            "temperature": inference_config.temperature,
+            "temperature": 0.0,
             "max_tokens": 1, # has to generate 1 token
-            "top_p": inference_config.top_p,
+            "top_p": 1.0,
             "add_generation_prompt": False if messages[-1]["role"] == "assistant" else True,
             "continue_final_message": True if messages[-1]["role"] == "assistant" else False,
             "chat_template": inference_config.chat_template, # custom chat template
-            "prompt_logprobs": 0, # only return the logprob for the given token
+            "prompt_logprobs": 1, # only return the logprob for the given token
         }
         
         response = requests.post(f"http://localhost:{self.port}/v1/chat/completions", json=payload)

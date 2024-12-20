@@ -466,6 +466,8 @@ class Math(Task):
         data = load_dataset("hendrycks/competition_math", trust_remote_code=True, split=task_config.split)
         if task_config.shuffle:
             data = data.shuffle(seed=42)
+        if task_config.max_num_instances > 0:
+            data = data.select(range(min(task_config.max_num_instances, len(data))))
         
         # judge for intermediate steps and final answer
         if task_config.judge_type == "llm":

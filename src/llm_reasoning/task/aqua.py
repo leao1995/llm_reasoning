@@ -190,6 +190,8 @@ class Aqua(Task):
     def from_config(cls, model: LLM, inference_config: InferenceConfig, task_config: OmegaConf):
         # test data
         data = load_dataset("deepmind/aqua_rat", "raw", split=task_config.split)
+        if task_config.max_num_instances > 0:
+            data = data.select(range(min(task_config.max_num_instances, len(data))))
         
         # judge for intermediate steps and final answer
         if task_config.judge_type == "llm":

@@ -50,13 +50,13 @@ class vLLMChatModel(LLM):
         payload = {
             "model": self.model_name,
             "messages": messages,
-            "temperature": inference_config.temperature,
+            "temperature": 0.0,
             "max_tokens": 1, # has to generate 1 token
-            "top_p": inference_config.top_p,
+            "top_p": 1.0,
             "add_generation_prompt": False if messages[-1]["role"] == "assistant" else True,
             "continue_final_message": True if messages[-1]["role"] == "assistant" else False,
             "chat_template": inference_config.chat_template, # custom chat template
-            "prompt_logprobs": 0, # only return the logprob for the given token
+            "prompt_logprobs": 1, # only return the logprob for the given token
         }
         
         response = requests.post(f"http://localhost:{self.port}/v1/chat/completions", json=payload)
@@ -96,8 +96,8 @@ def truncate_generations(text: str, token_probs: list[dict], finish_reason: str,
             - truncated_text (str): The truncated string.
             - truncated_token_probs (list[dict]): The truncated token probabilities.
     '''
-    if text != ''.join(token['token'] for token in token_probs):
-        logger.warning(f"tokens does not match decoded text:\n---{text}\n---\n{''.join(token['token'] for token in token_probs)}\n---")
+    if text.strip() != ''.join(token['token'] for token in token_probs).strip():
+        logger.warning(f"tokens does not match decoded text:\n---\n{text}\n---\n{''.join(token['token'] for token in token_probs)}\n---")
     
     # Strip leading whitespace from text
     stripped_text = text.lstrip()

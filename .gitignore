@@ -4,5 +4,7 @@ notebooks/
 scripts/
 test/
 lib/
+debug/
+baselines/
 __pycache__/
 *.egg-info
