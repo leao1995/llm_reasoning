@@ -74,7 +74,12 @@ class TreeSearchEnv:
         outputs = await asyncio.gather(*steps)
             
         for next_state, reward, _, info in outputs:
-            self.node.add_child(Node(next_state, reward, info, self.node, self.node.depth+1))
+            if next_state.is_terminal():
+                assert reward-info["task_reward"] >= 0
+                child_node = Node(next_state, reward-info["task_reward"], info, self.node, self.node.depth+1)
+            else:
+                child_node = Node(next_state, reward, info, self.node, self.node.depth+1)
+            self.node.add_child(child_node)
             
     async def _continue(self):
         '''
@@ -132,7 +137,7 @@ class TreeSearchEnv:
         '''
         next_node = self.node
         
-        reward = - self.action_costs["terminate"]
+        reward = next_node.info["task_reward"] - self.action_costs["terminate"]
         
         return next_node, reward
     
