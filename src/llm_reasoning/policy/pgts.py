@@ -294,8 +294,6 @@ class PGTS(Policy):
     
     @classmethod
     def from_config(cls, env: Task, policy_config: OmegaConf):
-        if 'task_reward' in env.reward_coeff: 
-            logger.warning("PGTS should not use task reward for searching, make sure you know what you are doing.")
         assert env.inference_config.temperature > 0, "greedy decoding cannot produce multiple reasoning chains"
         
         policy = TreeSearchPolicy.from_config(policy_config)

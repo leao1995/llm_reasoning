@@ -282,9 +282,10 @@ class TreeSearchPolicy(BaseModel):
             # breadth specific constraints
             if node.parent is not None and not node.parent.has_unvisited_child():
                 mask[1] = 0 # node does not have sibling nodes, cannot branch
+            cur_node = node
             for backtrack_step in range(1, node.depth):
-                node = node.parent
-                if not node.parent.has_unvisited_child():
+                cur_node = cur_node.parent
+                if not cur_node.parent.has_unvisited_child():
                     mask[backtrack_step+1] = 0 # cannot backtrack
             # terminate is valid only when the node is a terminal node
             mask[-1] = 1 if node.state.is_terminal() else 0
@@ -312,8 +313,6 @@ class AdaPGTS(Policy):
     
     @classmethod
     def from_config(cls, env: Task, policy_config: OmegaConf):
-        if 'task_reward' in env.reward_coeff: 
-            logger.warning("PGTS should not use task reward for searching, make sure you know what you are doing.")
         assert env.inference_config.temperature > 0, "greedy decoding cannot produce multiple reasoning chains"
         
         policy = TreeSearchPolicy.from_config(policy_config)
