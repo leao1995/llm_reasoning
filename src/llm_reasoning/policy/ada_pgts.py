@@ -441,6 +441,8 @@ class AdaPGTS(Policy):
                 best_reward = total_reward
                 self.policy.save()
                 logger.info(f"step {step} best_reward: {best_reward}")
+            if step % 50 == 0:
+                plot_reward(reward_hist, 10, os.path.join(self.policy.policy_dir, f"{self.policy.policy_name}.png"))
                 
         if training_config.save_last:
             self.policy.save()

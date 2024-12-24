@@ -43,7 +43,7 @@ def main(config_file: str, num_plots=10, prune=False):
     configs = OmegaConf.load(config_file)
     if configs.policy.name == "mcts":
         properties = ["state", "reward", "info", "Q", "visits"]
-    elif configs.policy.name == "pgts":
+    elif configs.policy.name in ["pgts", "ada_pgts"]:
         properties = ["state", "reward", "info", "node_id", "visits"]
     else:
         raise NotImplementedError()

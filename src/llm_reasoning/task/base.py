@@ -104,6 +104,12 @@ class Task(BaseModel):
         '''
         pass
     
+    def transition(self, state: State, action: Action) -> State:
+        '''
+        take the next action and transition to next state
+        '''
+        pass
+    
     async def step(self, state: State, action: Action) -> tuple[State, float, bool, dict]:
         '''
         take the next action and transition to next state

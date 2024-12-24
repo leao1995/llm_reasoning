@@ -182,7 +182,7 @@ def truncate_generations(text: str, token_probs: list[dict], finish_reason: str,
             - truncated_token_probs (list[dict]): The truncated token probabilities.
     '''
     if text.strip() != ''.join(token['token'] for token in token_probs).strip():
-        logger.warning(f"tokens does not match decoded text:\n---{text}\n---\n{''.join(token['token'] for token in token_probs)}\n---")
+        logger.warning(f"tokens does not match decoded text:\n---\n{text}\n---\n{''.join(token['token'] for token in token_probs)}\n---")
     
     # Strip leading whitespace from text
     stripped_text = text.lstrip()
