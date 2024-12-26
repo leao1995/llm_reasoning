@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 class vLLMModel(LLM):
     draft_model_name: Optional[str]
     model_name: str
+    max_model_len: Optional[int]
     devices: list[str]
     
     _tokenizer: AutoTokenizer
@@ -28,9 +29,10 @@ class vLLMModel(LLM):
                 model=self.model_name,
                 speculative_model=self.draft_model_name,
                 num_speculative_tokens=5,
+                max_model_len=self.max_model_len,
             )
         else:
-            self._model = vLLM(model=self.model_name)
+            self._model = vLLM(model=self.model_name, max_model_len=self.max_model_len)
         
         self._embed = AutoModelForCausalLM.from_pretrained(
             self.model_name,

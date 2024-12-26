@@ -16,6 +16,6 @@ def get_model(model_config: OmegaConf):
     elif model_config.model_source == "huggingface":
         return HuggingFaceModel(model_name=model_config.model_name, batch_size=model_config.batch_size, device=model_config.device)
     elif model_config.model_source == "vllm":
-        return vLLMModel(draft_model_name=model_config.draft_model_name, model_name=model_config.model_name, devices=model_config.devices)
+        return vLLMModel(draft_model_name=model_config.draft_model_name, model_name=model_config.model_name, max_seq_len=model_config.max_seq_len, devices=model_config.devices)
     else:
         raise NotImplementedError()
