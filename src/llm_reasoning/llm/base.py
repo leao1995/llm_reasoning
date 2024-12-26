@@ -18,6 +18,7 @@ class LLMResponse(BaseModel):
     
     text: str
     finish_reason: str
+    token_ids: Optional[list[int]] = None
     logprobs: Optional[list[float]] = None
     confidences: Optional[list[float]] = None
     perplexity: Optional[float] = None
@@ -44,6 +45,21 @@ class LLM(BaseModel):
                 [inference_config] * len(batch_messages),
             ))
         return responses
+    
+    def inference(self, input_ids: list[int], infernce_config: InferenceConfig) -> LLMResponse:
+        raise NotImplementedError()
+    
+    def batch_inference(self, batch_input_ids: list[list[int]], inference_config: InferenceConfig) -> list[LLMResponse]:
+        with ThreadPoolExecutor() as executor:
+            responses = list(executor.map(
+                self.inference,
+                batch_input_ids,
+                [inference_config] * len(batch_input_ids),
+            ))
+        return responses
+    
+    def encode(self, messages: list[dict], inference_config: InferenceConfig) -> list[int]:
+        return None
     
     def get_prompt_embedding(self, messages: list[dict], inference_config: InferenceConfig):
         return None

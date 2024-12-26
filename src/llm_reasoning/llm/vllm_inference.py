@@ -90,6 +90,7 @@ class vLLMInferenceModel(LLM):
         with torch.no_grad():
             outputs = self._model(chat_prompt, output_hidden_states=True)
         embedding = outputs.hidden_states[-1][0][-1].data.cpu().float() # last layer -> first batch idx -> last token
+        embedding = torch.nn.functional.normalize(embedding, p=2, dim=-1)
         
         return embedding
     

@@ -137,7 +137,10 @@ class TreeSearchEnv:
         '''
         next_node = self.node
         
-        reward = next_node.info["task_reward"] - self.action_costs["terminate"]
+        if "task_reward" in next_node.info: # terminate at leaf node
+            reward = next_node.info["task_reward"] - self.action_costs["terminate"]
+        else: # terminate when reach depth limit
+            reward = - self.action_costs["terminate"]
         
         return next_node, reward
     
@@ -289,6 +292,9 @@ class TreeSearchPolicy(BaseModel):
                     mask[backtrack_step+1] = 0 # cannot backtrack
             # terminate is valid only when the node is a terminal node
             mask[-1] = 1 if node.state.is_terminal() else 0
+            # special case: reached depth limit and no available nodes to explore
+            if not torch.any(mask):
+                mask[-1] = 1
             action_masks.append(mask)
         action_masks = torch.stack(action_masks).to(self.policy_device)
         

@@ -103,26 +103,9 @@ def truncate_generations(text: str, token_probs: list[dict], finish_reason: str,
     stripped_text = text.lstrip()
     leading_whitespace_len = len(text) - len(stripped_text)
     
-    # Adjust token_start_index by summing actual token contributions in output text
-    token_start_index = 0
-    cumulative_length = 0
-    for i, token in enumerate(token_probs):
-        # Extract the token text as it appears in the output
-        token_length = len(token.get("token", ""))
-        
-        # Skip tokens contributing to the leading whitespace
-        cumulative_length += token_length
-        if cumulative_length > leading_whitespace_len:
-            token_start_index = i
-            break
-            
-    # Update the text and tokens after removing leading whitespace
-    text = stripped_text
-    token_probs = token_probs[token_start_index:]
-    
     for stop_seq in stop_sequences:
         # Skip leading stop sequences
-        index = 0
+        index = leading_whitespace_len
         while text.startswith(stop_seq, index):
             index += len(stop_seq)
             

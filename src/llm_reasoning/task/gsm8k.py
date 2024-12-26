@@ -113,6 +113,7 @@ def check_answer_correctness(ground_truth: str, response: str):
 class GSM8KAction(Action):
     text: str
     finish_reason: str
+    response_ids: Optional[list[int]] = None
     log_prob: Optional[float] = None
     confidence: Optional[float] = None
     embedding: Optional[torch.Tensor] = None
@@ -126,6 +127,7 @@ class GSM8KAction(Action):
     
 class GSM8KState(State):
     problem: list[dict]
+    problem_ids: Optional[list[int]] = None
     answer: str
     trace: list[GSM8KAction]
     embedding: Optional[torch.Tensor] = None
@@ -146,6 +148,13 @@ class GSM8KState(State):
             messages.append({"role": "assistant", "content": assistant_prefill})
             
         return messages
+    
+    def to_input_ids(self):
+        input_ids = self.problem_ids.copy()
+        if self.trace:
+            input_ids += self.trace[-1].response_ids
+            
+        return input_ids
     
     def to_response(self):
         return ACTION_STEP_SEPARATOR.join([action.text for action in self.trace]).lstrip()
@@ -245,9 +254,13 @@ class GSM8K(Task):
         test_prompt = PROMPT_TEMPLATE.format(question=test_example["question"])
         messages.append({"role": "user", "content": test_prompt})
         
+        # encode problem
+        problem_ids = self.model.encode(messages, self.inference_config)
+        
         # create init state
         init_state = GSM8KState(
             problem=messages,
+            problem_ids=problem_ids,
             answer=test_example["answer"],
             trace=[],
             embedding=self.model.get_prompt_embedding(messages=messages, inference_config=InferenceConfig())
@@ -258,6 +271,7 @@ class GSM8K(Task):
     def transition(self, state: GSM8KState, action: GSM8KAction) -> GSM8KState:
         return GSM8KState(
             problem=state.problem,
+            problem_ids=state.problem_ids,
             answer=state.answer,
             trace=state.trace + [action],
             embedding=action.embedding
@@ -294,19 +308,29 @@ class GSM8K(Task):
         return next_state, reward, done, info
     
     def propose_actions(self, state: GSM8KState, num_actions: int) -> list[GSM8KAction]:
-        messages = state.to_messages()
-        inferece_config = self.inference_config.model_copy(update={"model_config": ConfigDict(frozen=False)})
-        inferece_config.stop_sequences += [ACTION_STEP_SEPARATOR]
-        inferece_config.max_tokens = MAX_STEP_TOKENS
-        llm_responses: list[LLMResponse] = self.model.batch_call(
-            batch_messages=[messages] * num_actions,
-            inference_config=inferece_config,
-        )
+        inference_config = self.inference_config.model_copy(update={"model_config": ConfigDict(frozen=False)})
+        inference_config.stop_sequences += [ACTION_STEP_SEPARATOR]
+        inference_config.max_tokens = MAX_STEP_TOKENS
+        
+        if state.problem_ids is not None:
+            input_ids = state.to_input_ids()
+            llm_responses: list[LLMResponse] = self.model.batch_inference(
+                batch_input_ids=[input_ids] * num_actions,
+                inference_config=inference_config,
+            )
+        else:
+            messages = state.to_messages()
+            llm_responses: list[LLMResponse] = self.model.batch_call(
+                batch_messages=[messages] * num_actions,
+                inference_config=inference_config
+            )
+            
         llm_responses = list(dict.fromkeys(llm_responses)) # remove duplicated responses
         
         return [
             GSM8KAction(
                 text=response.text,
+                response_ids=response.token_ids[len(state.problem_ids):] if response.token_ids is not None else None,
                 finish_reason=response.finish_reason,
                 log_prob=sum(response.logprobs) if response.logprobs else None,
                 confidence=mean(response.confidences) if response.confidences else None,

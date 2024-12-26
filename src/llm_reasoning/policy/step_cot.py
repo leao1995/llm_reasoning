@@ -26,11 +26,15 @@ class StepCoT(Policy):
             state = self.env.transition(state, action)
             depth += 1
         
-        return Solution(text=state.to_response())
+        return Solution(text=state.to_response()), state
         
     def run(self, state: State) -> tuple[list[Solution], dict]:
-        solutions = [self.generate_chain(state) for _ in range(self.num_chains)]
-        info = {}
+        solutions, final_states = [], []
+        for _ in range(self.num_chains):
+            solution, final_state = self.generate_chain(state)
+            solutions.append(solution)
+            final_states.append(final_state)
+        info = {"final_state": final_states}
         
         return solutions, info
         
