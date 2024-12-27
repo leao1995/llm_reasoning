@@ -15,3 +15,5 @@ export LD_LIBRARY_PATH=/opt/conda/envs/llm_reasoning/lib/python3.10/site-package
 ```
 
 2. When using judges, speculative decoding and prefix caching give "Internal Service" errors.
+
+3. vllm==0.6.4 and xformers==0.0.27.post2 are not compatible but higher version of xformers gives errors when install via pip. You can fist install vllm==0.6.3 and upgrade without changing dependencies.

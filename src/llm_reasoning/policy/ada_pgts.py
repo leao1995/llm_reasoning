@@ -42,11 +42,12 @@ class Node:
     
 
 class TreeSearchEnv:
-    def __init__(self, env: Task, max_steps: int, max_depth: int, max_breadth: int, action_costs: dict):
+    def __init__(self, env: Task, max_steps: int, max_depth: int, max_breadth: int, edge_type: str, action_costs: dict):
         self.env = env
         self.max_steps = max_steps
         self.max_depth = max_depth
         self.max_breadth = max_breadth
+        self.edge_type = edge_type
         self.action_costs = action_costs
         
     def init(self, root: Node):
@@ -144,6 +145,32 @@ class TreeSearchEnv:
         
         return next_node, reward
     
+    def _get_edges(self, node: Node):
+        if self.edge_type == "directed":
+            return [(node.parent.node_id, node.node_id)]
+        elif self.edge_type == "undirected":
+            return [(node.parent.node_id, node.node_id), (node.node_id, node.parent.node_id)]
+        elif self.edge_type == "path_directed":
+            edge_idx = []
+            parent = node.parent
+            while parent is not None:
+                edge_idx.append((parent.node_id, node.node_id))
+                parent = parent.parent
+        elif self.edge_type == "path_undirected":
+            edge_idx = []
+            parent = node.parent
+            while parent is not None:
+                edge_idx.extend([(parent.node_id, node.node_id), (node.node_id, parent.node_id)])
+                parent = parent.parent
+            return edge_idx
+        elif self.edge_type == "full":
+            edge_idx = []
+            for i in range(node.node_id):
+                edge_idx.extend([(i, node.node_id), (node.node_id, i)])
+            return edge_idx
+        else:
+            raise NotImplementedError()
+    
     async def step(self, action: int):
         if action == 0: # continue
             next_node, reward = await self._continue()
@@ -165,7 +192,7 @@ class TreeSearchEnv:
             next_node.node_id = self.node_id # do not change node id if it's visited before
             self.trace.append((action, next_node.state))
             self.node_features.append(next_node.state.embedding)
-            self.edge_index.extend([(next_node.parent.node_id, next_node.node_id), (next_node.node_id, next_node.parent.node_id)])
+            self.edge_index.extend(self._get_edges(next_node))
         
         # record graph representation as node properties, these properties will be updated even for seen nodes
         next_node.trace = self.trace.copy()
@@ -316,6 +343,7 @@ class AdaPGTS(Policy):
     breadth_limit: int
     depth_limit: int
     max_search_steps: int
+    edge_type: str
     
     @classmethod
     def from_config(cls, env: Task, policy_config: OmegaConf):
@@ -331,6 +359,7 @@ class AdaPGTS(Policy):
             search_action_costs=dict(policy_config.search_action_costs),
             breadth_limit=policy_config.breadth_limit,
             depth_limit=policy_config.depth_limit,
+            edge_type=policy_config.edge_type,
             max_search_steps=policy_config.max_search_steps,
         )
         
@@ -340,7 +369,8 @@ class AdaPGTS(Policy):
             max_steps=self.max_search_steps,
             max_depth=self.depth_limit,
             max_breadth=self.breadth_limit,
-            action_costs=self.search_action_costs
+            edge_type=self.edge_type,
+            action_costs=self.search_action_costs,
         )
         root = Node(state, 0, {})
         env.init(root)

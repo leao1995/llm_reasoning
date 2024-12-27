@@ -12,6 +12,7 @@ def generate_bc_data(root):
 
 def main(config_file: str):
     configs = OmegaConf.load(config_file)
+    assert configs.policy.name == "mcts"
     
     model = get_model(configs.model)
     inference_config = InferenceConfig(**configs.model)
@@ -20,8 +21,11 @@ def main(config_file: str):
     auxiliary_file = os.path.join(configs.experiment.exp_dir, "auxiliary.pth")
     auxiliary = torch.load(auxiliary_file)
     
-    save_dir = os.path.join(configs.experiment.exp_dir, "bc_data")
+    save_dir = os.path.join(configs.experiment.exp_dir, "pretrain_data")
     os.makedirs(save_dir, exist_ok=True)
+    
+    for i in range(task.size):
+        pass
     
 
 if __name__ == "__main__":
