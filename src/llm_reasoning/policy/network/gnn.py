@@ -27,7 +27,7 @@ def collate_fn(batch):
     node_offset = 0
 
     for graph_idx, graph_data in enumerate(batch):
-        node_features = graph_data["node_features"]
+        node_features = torch.stack([f["embedding"] for f in graph_data["node_features"]]) # num_node x embed_dim
         edge_index = graph_data["edge_index"]
         current_node_idx = graph_data["current_node_idx"]
 

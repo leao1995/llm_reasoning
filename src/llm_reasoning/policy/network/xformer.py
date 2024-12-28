@@ -17,7 +17,7 @@ def collate_fn(batch):
         attention_mask (Tensor): Attention mask of shape [batch_size, max_nodes, max_nodes].
         current_node_indices (Tensor): Indices of current nodes in the batch.
     """
-    node_features_list = [tree["node_features"] for tree in batch]
+    node_features_list = [torch.stack([f["embedding"] for f in tree["node_features"]]) for tree in batch]
     edge_index_list = [tree["edge_index"] for tree in batch]
     current_node_indices = torch.tensor([tree["current_node_idx"] for tree in batch], dtype=torch.long)
     

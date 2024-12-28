@@ -463,7 +463,10 @@ class Math(Task):
     @classmethod
     def from_config(cls, model: LLM, inference_config: InferenceConfig, task_config: OmegaConf):
         # test data
-        data = load_dataset("hendrycks/competition_math", trust_remote_code=True, split=task_config.split)
+        if task_config.split != "test":
+            data = load_dataset("hendrycks/competition_math", trust_remote_code=True, split=task_config.split)
+        else:
+            data = load_dataset("HuggingFaceH4/MATH-500", split=task_config.split)
         if task_config.shuffle:
             data = data.shuffle(seed=42)
         if task_config.max_num_instances > 0:

@@ -10,7 +10,7 @@ from collections import namedtuple
 
 from llm_reasoning.task.base import State, Action, Task, Solution
 from llm_reasoning.policy.base import Policy
-from llm_reasoning.policy.network import gnn, xformer 
+from llm_reasoning.policy.network import gnn, xformer, san
 from llm_reasoning.policy.utils import plot_reward, ppo_advantage, ReplayBuffer
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,8 @@ class Node:
         # additional properties for policy
         self.node_id: int = None
         self.trace: list[tuple[int, State]] = []
-        self.node_features: list[torch.Tensor] = []
+        self.node_features: list[dict] = []
+        self.edge_features: list[dict] = []
         self.edge_index: list[list[int]] = []
     
     def add_child(self, child: 'Node'):
@@ -53,7 +54,8 @@ class TreeSearchEnv:
     def init(self, root: Node):
         root.node_id = 0
         root.trace.append((-1, root.state))
-        root.node_features.append(root.state.embedding)
+        root.node_features.append({"embedding": root.state.embedding, "depth": root.depth})
+        root.edge_features = []
         root.edge_index = []
         
         # reset current node
@@ -64,7 +66,8 @@ class TreeSearchEnv:
         # reset global graph representations
         self.node_id = 0
         self.trace = [(-1, root.state)]
-        self.node_features = [root.state.embedding]
+        self.node_features = [{"embedding": root.state.embedding, "depth": root.depth}]
+        self.edge_features = []
         self.edge_index = []
         
     async def _expand(self):
@@ -147,29 +150,43 @@ class TreeSearchEnv:
     
     def _get_edges(self, node: Node):
         if self.edge_type == "directed":
-            return [(node.parent.node_id, node.node_id)]
+            edge_idx = [(node.parent.node_id, node.node_id)]
+            edge_feat = [{"step": node.depth - node.parent.depth, "logprob": node.info["action_logprob"]}]
         elif self.edge_type == "undirected":
-            return [(node.parent.node_id, node.node_id), (node.node_id, node.parent.node_id)]
+            edge_idx = [(node.parent.node_id, node.node_id), (node.node_id, node.parent.node_id)]
+            edge_feat = [{"step": node.depth - node.parent.depth, "logprob": node.info["action_logprob"]}, 
+                         {"step": node.parent.depth - node.depth, "logprob": node.info["action_logprob"]}]
         elif self.edge_type == "path_directed":
-            edge_idx = []
-            parent = node.parent
+            edge_idx = [(node.parent.node_id, node.node_id)]
+            edge_feat = [{"step": node.depth - node.parent.depth, "logprob": node.info["action_logprob"]}]
+            parent = node.parent.parent
             while parent is not None:
                 edge_idx.append((parent.node_id, node.node_id))
+                edge_feat.append({"step": node.depth - parent.depth, "logprob": None})
                 parent = parent.parent
         elif self.edge_type == "path_undirected":
-            edge_idx = []
-            parent = node.parent
+            edge_idx = [(node.parent.node_id, node.node_id), (node.node_id, node.parent.node_id)]
+            edge_feat = [{"step": node.depth - node.parent.depth, "logprob": node.info["action_logprob"]}, 
+                         {"step": node.parent.depth - node.depth, "logprob": node.info["action_logprob"]}]
+            parent = node.parent.parent
             while parent is not None:
                 edge_idx.extend([(parent.node_id, node.node_id), (node.node_id, parent.node_id)])
+                edge_feat.extend([{"step": node.depth - parent.depth, "logprob": None},
+                                  {"step": parent.depth - node.depth, "logprob": None}])
                 parent = parent.parent
-            return edge_idx
         elif self.edge_type == "full":
-            edge_idx = []
+            edge_idx = [(node.parent.node_id, node.node_id), (node.node_id, node.parent.node_id)]
+            edge_feat = [{"step": node.depth - node.parent.depth, "logprob": node.info["action_logprob"]}, 
+                         {"step": node.parent.depth - node.depth, "logprob": node.info["action_logprob"]}]
             for i in range(node.node_id):
-                edge_idx.extend([(i, node.node_id), (node.node_id, i)])
-            return edge_idx
+                if i != node.parent.node_id:
+                    edge_idx.extend([(i, node.node_id), (node.node_id, i)])
+                    edge_feat.extend([{"step": None, "logprob": None},
+                                      {"step": None, "logprob": None}])
         else:
             raise NotImplementedError()
+        
+        return edge_idx, edge_feat
     
     async def step(self, action: int):
         if action == 0: # continue
@@ -191,12 +208,15 @@ class TreeSearchEnv:
             self.node_id += 1
             next_node.node_id = self.node_id # do not change node id if it's visited before
             self.trace.append((action, next_node.state))
-            self.node_features.append(next_node.state.embedding)
-            self.edge_index.extend(self._get_edges(next_node))
+            self.node_features.append({"embedding": next_node.state.embedding, "depth": next_node.depth})
+            edge_index, edge_features = self._get_edges(next_node)
+            self.edge_features.extend(edge_features)
+            self.edge_index.extend(edge_index)
         
         # record graph representation as node properties, these properties will be updated even for seen nodes
         next_node.trace = self.trace.copy()
         next_node.node_features = self.node_features.copy()
+        next_node.edge_features = self.edge_features.copy()
         next_node.edge_index = self.edge_index.copy()
         
         self.node = next_node
@@ -228,21 +248,41 @@ class TreeSearchPolicy(BaseModel):
         
         if policy_config.policy_type == "gnn":
             policy_network = gnn.GNNPolicy(
-                policy_config.node_dim, 
-                policy_config.hidden_dim, 
-                num_actions
+                node_dim=policy_config.node_dim, 
+                hidden_dim=policy_config.hidden_dim, 
+                num_actions=num_actions
             ).to(policy_config.device)
         elif policy_config.policy_type == "xformer":
             policy_network = xformer.XformerPolicy(
-                policy_config.node_dim,
-                policy_config.hidden_dim,
-                num_actions,
-                policy_config.num_layers,
-                policy_config.num_heads,
-                policy_config.dropout
+                node_dim=policy_config.node_dim,
+                hidden_dim=policy_config.hidden_dim,
+                num_actions=num_actions,
+                num_layers=policy_config.num_layers,
+                num_heads=policy_config.num_heads,
+                dropout=policy_config.dropout
+            ).to(policy_config.device)
+        elif policy_config.policy_type == "san":
+            policy_network = san.SANPolicy(
+                gamma=policy_config.gamma,
+                node_dim=policy_config.node_dim,
+                max_depth=policy_config.depth_limit,
+                edge_dim=policy_config.edge_dim,
+                hidden_dim=policy_config.hidden_dim,
+                pe_dim=policy_config.pe_dim,
+                pe_layers=policy_config.pe_layers,
+                san_layers=policy_config.num_layers,
+                num_heads=policy_config.num_heads,
+                dropout=policy_config.dropout,
+                layer_norm=policy_config.layer_norm,
+                batch_norm=policy_config.batch_norm,
+                residual=policy_config.residual,
+                full_graph=policy_config.full_graph,
+                num_actions=num_actions,
             ).to(policy_config.device)
         else:
             raise NotImplementedError
+        
+        logger.info(f"Policy {policy_config.policy_type} has {sum(p.numel() for p in policy_network.parameters())} parameters")
 
         return cls(
             policy_dir=policy_config.policy_dir,
@@ -279,7 +319,8 @@ class TreeSearchPolicy(BaseModel):
     def _prepare_inputs(self, nodes: list[Node]):
         batch = [
             {
-                "node_features": torch.stack(node.node_features),
+                "node_features": node.node_features,
+                "edge_features": node.edge_features,
                 "edge_index": torch.tensor(node.edge_index).t(),
                 "current_node_idx": node.node_id,
             }
@@ -289,6 +330,8 @@ class TreeSearchPolicy(BaseModel):
             batch_inputs = gnn.collate_fn(batch)
         elif self.policy_type == "xformer":
             batch_inputs = xformer.collate_fn(batch)
+        elif self.policy_type == "san":
+            batch_inputs = san.collate_fn(batch, max_freqs=10)
         else:
             raise NotImplementedError()
         
