@@ -15,6 +15,7 @@ class vLLMModel(LLM):
     draft_model_name: Optional[str]
     model_name: str
     max_model_len: Optional[int]
+    gpu_memory_utilization: float
     devices: list[str]
     
     _tokenizer: AutoTokenizer
@@ -30,9 +31,10 @@ class vLLMModel(LLM):
                 speculative_model=self.draft_model_name,
                 num_speculative_tokens=5,
                 max_model_len=self.max_model_len,
+                gpu_memory_utilization=self.gpu_memory_utilization
             )
         else:
-            self._model = vLLM(model=self.model_name, max_model_len=self.max_model_len)
+            self._model = vLLM(model=self.model_name, max_model_len=self.max_model_len, gpu_memory_utilization=self.gpu_memory_utilization)
         
         self._embed = AutoModelForCausalLM.from_pretrained(
             self.model_name,
