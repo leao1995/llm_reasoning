@@ -10,7 +10,7 @@ from collections import namedtuple
 
 from llm_reasoning.task.base import State, Action, Task, Solution
 from llm_reasoning.policy.base import Policy
-from llm_reasoning.policy.network import gnn, xformer, san
+from llm_reasoning.policy.network import gnn, xformer, san, gps
 from llm_reasoning.policy.utils import plot_reward, ppo_advantage, ReplayBuffer
 
 logger = logging.getLogger(__name__)
@@ -279,6 +279,22 @@ class TreeSearchPolicy(BaseModel):
                 full_graph=policy_config.full_graph,
                 num_actions=num_actions,
             ).to(policy_config.device)
+        elif policy_config.policy_type == "gps":
+            policy_network = gps.GPSPolicy(
+                node_dim=policy_config.node_dim,
+                max_depth=policy_config.depth_limit,
+                edge_dim=policy_config.edge_dim,
+                hidden_dim=policy_config.hidden_dim,
+                pe_dim=policy_config.pe_dim,
+                num_rw_steps=policy_config.num_rw_steps,
+                gps_layers=policy_config.num_layers,
+                num_heads=policy_config.num_heads,
+                dropout=policy_config.dropout,
+                attn_dropout=policy_config.attn_dropout,
+                layer_norm=policy_config.layer_norm,
+                batch_norm=policy_config.batch_norm,
+                num_actions=num_actions,
+            ).to(policy_config.device)
         else:
             raise NotImplementedError
         
@@ -332,6 +348,8 @@ class TreeSearchPolicy(BaseModel):
             batch_inputs = xformer.collate_fn(batch)
         elif self.policy_type == "san":
             batch_inputs = san.collate_fn(batch, max_freqs=10)
+        elif self.policy_type == "gps":
+            batch_inputs = gps.collate_fn(batch, self.policy_network.num_rw_steps)
         else:
             raise NotImplementedError()
         
