@@ -92,7 +92,7 @@ class SANPolicy(nn.Module):
         
         # node feature
         self.node_proj = nn.Linear(node_dim, hidden_dim)
-        self.depth_embed = nn.Embedding(max_depth, hidden_dim)
+        self.depth_embed = nn.Embedding(max_depth+1, hidden_dim)
         self.lap_pe = LapPENodeEncoder(pe_dim, num_heads, pe_layers)
         self.node_feature = nn.Linear(hidden_dim * 2 + pe_dim, hidden_dim)
         

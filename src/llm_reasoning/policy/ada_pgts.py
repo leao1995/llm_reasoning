@@ -378,6 +378,9 @@ class TreeSearchPolicy(BaseModel):
                 cur_node = cur_node.parent
                 if not cur_node.parent.has_unvisited_child():
                     mask[backtrack_step+1] = 0 # cannot backtrack
+            # terminal node cannot expand further
+            if node.state.is_terminal():
+                mask[0] = 0
             # terminate is valid only when the node is a terminal node
             mask[-1] = 1 if node.state.is_terminal() else 0
             # special case: reached depth limit and no available nodes to explore

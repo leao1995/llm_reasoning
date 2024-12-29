@@ -51,7 +51,7 @@ def main(config_file: str, num_plots=10, prune=False):
     visalizer = TreeVisualizer(properties, prune)
     
     info_file = os.path.join(configs.experiment.exp_dir, "auxiliary.pth")
-    info = torch.load(info_file)
+    info = torch.load(info_file, map_location="cpu")
     
     save_dir = os.path.join(configs.experiment.exp_dir, "visualization")
     os.makedirs(save_dir, exist_ok=True)

@@ -21,24 +21,24 @@ logger = logging.getLogger(__name__)
 # adapted from opencompass
 IN_CONTEXT_EXAMPLES = [
     {
-        "question": "Find the domain of the expression $\\frac{{\sqrt{{x-2}}}}{{\sqrt{{5-x}}}}$.}}\nPlease reason step by step, and put your final answer within \\boxed{}",
+        "question": "Find the domain of the expression $\\frac{{\sqrt{{x-2}}}}{{\sqrt{{5-x}}}}$.}}\nPlease reason step by step, and put your final answer within \\boxed{{}}",
         "answer": "The expressions inside each square root must be non-negative.\nTherefore, $x-2 \ge 0$, so $x\ge2$, and $5 - x \ge 0$, so $x \le 5$.\nAlso, the denominator cannot be equal to zero, so $5-x>0$, which gives $x<5$.\nTherefore, the domain of the expression is $\\boxed{{[2,5)}}$."
     },
     {
-        "question": "If $\det \mathbf{{A}} = 2$ and $\det \mathbf{{B}} = 12,$ then find $\det (\mathbf{{A}} \mathbf{{B}}).$\nPlease reason step by step, and put your final answer within \\boxed{}",
+        "question": "If $\det \mathbf{{A}} = 2$ and $\det \mathbf{{B}} = 12,$ then find $\det (\mathbf{{A}} \mathbf{{B}}).$\nPlease reason step by step, and put your final answer within \\boxed{{}}",
         "answer": "We have that $\det (\mathbf{{A}} \mathbf{{B}}) = (\det \mathbf{{A}})(\det \mathbf{{B}}) = (2)(12) = \\boxed{{24}}."
     },
     {
-        "question": "Terrell usually lifts two 20-pound weights 12 times. If he uses two 15-pound weights instead, how many times must Terrell lift them in order to lift the same total weight?\nPlease reason step by step, and put your final answer within \\boxed{}",
+        "question": "Terrell usually lifts two 20-pound weights 12 times. If he uses two 15-pound weights instead, how many times must Terrell lift them in order to lift the same total weight?\nPlease reason step by step, and put your final answer within \\boxed{{}}",
         "answer": "If Terrell lifts two 20-pound weights 12 times, he lifts a total of $2\cdot 12\cdot20=480$ pounds of weight.\nIf he lifts two 15-pound weights instead for $n$ times, he will lift a total of $2\cdot15\cdot n=30n$ pounds of weight.\nEquating this to 480 pounds, we can solve for $n$: \\begin{{align*}} 30n&=480\\\\ \Rightarrow\qquad n&=480/30=\\boxed{{16}} \end{{align*}}"
     },
     {
-        "question": "If the system of equations: \\begin{{align*}} 6x-4y&=a,\\\\ 6y-9x &=b. \end{{align*}}has a solution $(x, y)$ where $x$ and $y$ are both nonzero, find $\\frac{{a}}{{b}},$ assuming $b$ is nonzero.\nPlease reason step by step, and put your final answer within \\boxed{}",
+        "question": "If the system of equations: \\begin{{align*}} 6x-4y&=a,\\\\ 6y-9x &=b. \end{{align*}}has a solution $(x, y)$ where $x$ and $y$ are both nonzero, find $\\frac{{a}}{{b}},$ assuming $b$ is nonzero.\nPlease reason step by step, and put your final answer within \\boxed{{}}",
         "answer": "If we multiply the first equation by $-\\frac{{3}}{{2}}$, we obtain $$6y-9x=-\\frac{{3}}{{2}}a.$$\nSince we also know that $6y-9x=b$, we have $$-\\frac{{3}}{{2}}a=b\Rightarrow\\frac{{a}}{{b}}=\\boxed{{-\\frac{{2}}{{3}}}}.$$"
     }
 ]
 
-PROMPT_TEMPLATE = "{problem}\nPlease reason step by step, and put your final answer within \\boxed{}."
+PROMPT_TEMPLATE = "{problem}\nPlease reason step by step, and put your final answer within \\boxed{{}}."
 
 ACTION_STEP_SEPARATOR = "\n"
 
@@ -408,6 +408,7 @@ def check_answer_correctness(str1, str2):
 class MathAction(Action):
     text: str
     finish_reason: str
+    response_ids: Optional[list[int]] = None
     log_prob: Optional[float] = None
     confidence: Optional[float] = None
     embedding: Optional[torch.Tensor] = None
@@ -421,6 +422,7 @@ class MathAction(Action):
 
 class MathState(State):
     problem: list[dict]
+    problem_ids: Optional[list[int]] = None
     answer: str
     trace: list[MathAction]
     embedding: Optional[torch.Tensor] = None
@@ -442,6 +444,13 @@ class MathState(State):
             
         return messages
     
+    def to_input_ids(self):
+        input_ids = self.problem_ids.copy()
+        if self.trace:
+            input_ids += self.trace[-1].response_ids
+            
+        return input_ids
+    
     def to_response(self):
         return ACTION_STEP_SEPARATOR.join([action.text for action in self.trace]).lstrip()
     
@@ -457,18 +466,17 @@ class Math(Task):
     model: LLM
     inference_config: InferenceConfig
     reward_coeff: dict[str, float]
-    answer_judge: BaseJudge
-    step_judge: BaseJudge
+    answer_judge: Optional[BaseJudge]
+    step_judge: Optional[BaseJudge]
     
     @classmethod
     def from_config(cls, model: LLM, inference_config: InferenceConfig, task_config: OmegaConf):
         # test data
-        if task_config.split != "test":
-            data = load_dataset("hendrycks/competition_math", trust_remote_code=True, split=task_config.split)
-        else:
-            data = load_dataset("HuggingFaceH4/MATH-500", split=task_config.split)
-        if task_config.shuffle:
+        if task_config.split == "train":
+            data = load_dataset("hendrycks/competition_math", trust_remote_code=True, split="train")
             data = data.shuffle(seed=42)
+        else:
+            data = load_dataset("HuggingFaceH4/MATH-500", split="test")
         if task_config.max_num_instances > 0:
             data = data.select(range(min(task_config.max_num_instances, len(data))))
         
@@ -545,9 +553,13 @@ class Math(Task):
         test_prompt = PROMPT_TEMPLATE.format(problem=test_example["problem"])
         messages.append({"role": "user", "content": test_prompt})
         
+        # encode problem
+        problem_ids = self.model.encode(messages, self.inference_config)
+        
         # create init state
         init_state = MathState(
             problem=messages,
+            problem_ids=problem_ids,
             answer=test_example["solution"],
             trace=[],
             embedding=self.model.get_prompt_embedding(messages=messages, inference_config=InferenceConfig())
@@ -558,6 +570,7 @@ class Math(Task):
     def transition(self, state: MathState, action: MathAction) -> MathState:
         return MathState(
             problem=state.problem,
+            problem_ids=state.problem_ids,
             answer=state.answer,
             trace=state.trace + [action],
             embedding=action.embedding
@@ -594,19 +607,29 @@ class Math(Task):
         return next_state, reward, done, info
     
     def propose_actions(self, state: MathState, num_actions: int) -> list[MathAction]:
-        messages = state.to_messages()
-        inferece_config = self.inference_config.model_copy(update={"model_config": ConfigDict(frozen=False)})
-        inferece_config.stop_sequences += [ACTION_STEP_SEPARATOR]
-        inferece_config.max_tokens = MAX_STEP_TOKENS
-        llm_responses: list[LLMResponse] = self.model.batch_call(
-            batch_messages=[messages] * num_actions,
-            inference_config=inferece_config,
-        )
+        inference_config = self.inference_config.model_copy(update={"model_config": ConfigDict(frozen=False)})
+        inference_config.stop_sequences += [ACTION_STEP_SEPARATOR]
+        inference_config.max_tokens = MAX_STEP_TOKENS
+        
+        if state.problem_ids is not None:
+            input_ids = state.to_input_ids()
+            llm_responses: list[LLMResponse] = self.model.batch_inference(
+                batch_input_ids=[input_ids] * num_actions,
+                inference_config=inference_config,
+            )
+        else:
+            messages = state.to_messages()
+            llm_responses: list[LLMResponse] = self.model.batch_call(
+                batch_messages=[messages] * num_actions,
+                inference_config=inference_config,
+            )
+            
         llm_responses = list(dict.fromkeys(llm_responses)) # remove duplicated responses
         
         return [
             MathAction(
                 text=response.text,
+                response_ids=response.token_ids[len(state.problem_ids):] if response.token_ids is not None else None,
                 finish_reason=response.finish_reason,
                 log_prob=sum(response.logprobs) if response.logprobs else None,
                 confidence=mean(response.confidences) if response.confidences else None,
