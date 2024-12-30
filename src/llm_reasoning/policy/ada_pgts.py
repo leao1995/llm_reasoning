@@ -41,15 +41,24 @@ class Node:
     def has_unvisited_child(self):
         return len(self.children) == 0 or self.child_idx < len(self.children) - 1
     
+    def __eq__(self, other):
+        if isinstance(other, Node):
+            return self.state == other.state
+        return False
+
+    def __hash__(self):
+        return hash(self.state)
+    
 
 class TreeSearchEnv:
-    def __init__(self, env: Task, max_steps: int, max_depth: int, max_breadth: int, edge_type: str, action_costs: dict):
+    def __init__(self, env: Task, max_steps: int, max_depth: int, max_breadth: int, edge_type: str, action_costs: dict, extra_bonus: dict):
         self.env = env
         self.max_steps = max_steps
         self.max_depth = max_depth
         self.max_breadth = max_breadth
         self.edge_type = edge_type
         self.action_costs = action_costs
+        self.extra_bonus = extra_bonus
         
     def init(self, root: Node):
         root.node_id = 0
@@ -63,6 +72,7 @@ class TreeSearchEnv:
         self.node = root
         # reset num_steps
         self.num_steps = 0
+        self.terminals = []
         # reset global graph representations
         self.node_id = 0
         self.trace = [(-1, root.state)]
@@ -188,6 +198,22 @@ class TreeSearchEnv:
         
         return edge_idx, edge_feat
     
+    def _path_diversity(self, node: Node):
+        if not self.terminals:
+            return 0.0
+        # find lowest common ancestor
+        heights = []
+        for term_node, path in self.terminals:
+            cur_node = node
+            while cur_node:
+                if cur_node in path:
+                    heights.append(node.depth - cur_node.depth)
+                    break
+                cur_node = cur_node.parent
+        min_height = min(heights)
+        
+        return (min_height / self.max_depth) * self.extra_bonus["path_diversity"]
+    
     async def step(self, action: int):
         if action == 0: # continue
             next_node, reward = await self._continue()
@@ -218,6 +244,18 @@ class TreeSearchEnv:
         next_node.node_features = self.node_features.copy()
         next_node.edge_features = self.edge_features.copy()
         next_node.edge_index = self.edge_index.copy()
+        
+        # reward for path diversity
+        if next_node.state.is_terminal() and "path_diversity" in self.extra_bonus:
+            diversity_bonus = self._path_diversity(next_node)
+            reward += diversity_bonus
+            # save the path
+            path = set()
+            cur_node = next_node
+            while cur_node:
+                path.add(cur_node)
+                cur_node = cur_node.parent
+            self.terminals.append((next_node, path))
         
         self.node = next_node
         
@@ -404,6 +442,7 @@ class AdaPGTS(Policy):
     env: Task
     policy: TreeSearchPolicy
     search_action_costs: dict[str, float]
+    extra_bonus: dict[str, float]
     breadth_limit: int
     depth_limit: int
     max_search_steps: int
@@ -421,6 +460,7 @@ class AdaPGTS(Policy):
             env=env,
             policy=policy,
             search_action_costs=dict(policy_config.search_action_costs),
+            extra_bonus=dict(policy_config.extra_bonus),
             breadth_limit=policy_config.breadth_limit,
             depth_limit=policy_config.depth_limit,
             edge_type=policy_config.edge_type,
@@ -435,6 +475,7 @@ class AdaPGTS(Policy):
             max_breadth=self.breadth_limit,
             edge_type=self.edge_type,
             action_costs=self.search_action_costs,
+            extra_bonus=self.extra_bonus,
         )
         root = Node(state, 0, {})
         env.init(root)

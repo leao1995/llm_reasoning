@@ -22,6 +22,7 @@ dependencies = [
     "scipy",
     "seaborn",
     "pyvis",
+    "torch-scatter @ https://data.pyg.org/whl/torch-2.5.0+cu124.html",
 ]
 
 [tool.setuptools.packages.find]
