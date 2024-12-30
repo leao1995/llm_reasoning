@@ -138,7 +138,6 @@ class MCTS(Policy):
         
         # update reward
         for n, (next_state, reward, _, info) in zip(nodes_to_execute, outputs):
-            n.step_fn = None # cleanup coroutine
             n.state = next_state
             n.reward = reward
             n.info = info
@@ -157,6 +156,10 @@ class MCTS(Policy):
             if node.state.is_terminal():
                 terminal_state_dict[node.state] = total_reward
                 return
+            # cleanup step functions for all children
+            for child in node.children:
+                child.step_fn = None
+            # traverse only visited children
             visited_childred = [child for child in node.children if child.visits > 0]
             for child in visited_childred:
                 dfs(child, total_reward + child.reward)
