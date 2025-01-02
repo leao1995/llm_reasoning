@@ -89,8 +89,8 @@ class TreeSearchEnv:
             
         for next_state, reward, _, info in outputs:
             if next_state.is_terminal():
-                assert reward-info["task_reward"] >= 0
-                child_node = Node(next_state, reward-info["task_reward"], info, self.node, self.node.depth+1)
+                assert reward-info["task_reward"] * self.env.reward_coeff["task_reward"] >= 0
+                child_node = Node(next_state, reward-info["task_reward"] * self.env.reward_coeff["task_reward"], info, self.node, self.node.depth+1)
             else:
                 child_node = Node(next_state, reward, info, self.node, self.node.depth+1)
             self.node.add_child(child_node)
@@ -152,7 +152,7 @@ class TreeSearchEnv:
         next_node = self.node
         
         if "task_reward" in next_node.info: # terminate at leaf node
-            reward = next_node.info["task_reward"] - self.action_costs["terminate"]
+            reward = next_node.info["task_reward"] * self.env.reward_coeff["task_reward"] - self.action_costs["terminate"]
         else: # terminate when reach depth limit
             reward = - self.action_costs["terminate"]
         

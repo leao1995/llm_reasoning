@@ -3,7 +3,6 @@ from typing import Optional
 import torch
 import numpy as np
 from scipy.special import logsumexp
-from concurrent.futures import ThreadPoolExecutor
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from vllm import LLM as vLLM, SamplingParams
 
@@ -170,39 +169,88 @@ class vLLMModel(LLM):
         
         return embedding
     
-    def _get_prompt_logprobs(self, messages: list[dict], inference_config: InferenceConfig):
-        sampling_params = SamplingParams(
-            temperature=0.0,
-            top_p=1.0,
-            max_tokens=1,
-            prompt_logprobs=1,
-        )
-        outputs = self._model.chat(
-            messages,
-            sampling_params,
-            use_tqdm=False,
-            chat_template=inference_config.chat_template,
-            add_generation_prompt=False if messages[-1]["role"] == "assistant" else True,
-            continue_final_message=True if messages[-1]["role"] == "assistant" else False
-        )
+    # def _get_prompt_logprobs(self, messages: list[dict], inference_config: InferenceConfig):
+    #     sampling_params = SamplingParams(
+    #         temperature=0.0,
+    #         top_p=1.0,
+    #         max_tokens=1,
+    #         prompt_logprobs=1,
+    #     )
+    #     outputs = self._model.chat(
+    #         messages,
+    #         sampling_params,
+    #         use_tqdm=False,
+    #         chat_template=inference_config.chat_template,
+    #         add_generation_prompt=False if messages[-1]["role"] == "assistant" else True,
+    #         continue_final_message=True if messages[-1]["role"] == "assistant" else False
+    #     )
         
-        return outputs[0].prompt_logprobs
+    #     return outputs[0].prompt_logprobs        
     
-    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig):
+    # def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig, normalize: bool=True):
+    #     assert messages[-1]["role"] == "user"
+        
+    #     batch_messages = [messages] + [messages + [{"role": "assistant", "content": cand}] for cand in answer_candidates]
+    #     prompt_logprobs = [self._get_prompt_logprobs(messages, inference_config) for messages in batch_messages]
+    #     prefix_len = len(prompt_logprobs[0])
+    #     seq_log_prob = [sum(next(iter(t.values())).logprob for t in prompt_logprobs[i+1][prefix_len:]) for i in range(len(answer_candidates))]
+        
+    #     if normalize:
+    #         seq_prob = [np.exp(logprob) for logprob in seq_log_prob]
+    #         seq_prob = [p / sum(seq_prob) for p in seq_prob]
+            
+    #         return seq_prob
+        
+    #     return seq_log_prob
+    
+    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig, normalize: bool=True):
         assert messages[-1]["role"] == "user"
         
-        batch_messages = [messages] + [messages + [{"role": "assistant", "content": cand}] for cand in answer_candidates]
-        with ThreadPoolExecutor() as executor:
-            prompt_logprobs = list(executor.map(
-                self._get_prompt_logprobs,
-                batch_messages,
-                [inference_config] * len(batch_messages),
-            ))
-        prefix_len = len(prompt_logprobs[0])
-        seq_log_prob = [sum(next(iter(t.values())).logprob for t in prompt_logprobs[i+1][prefix_len:]) for i in range(len(answer_candidates))]
-        seq_prob = [np.exp(logprob) for logprob in seq_log_prob]
+        prefix = self._tokenizer.apply_chat_template(
+            messages, 
+            tokenize=True, 
+            add_generation_prompt=True,
+            chat_template=inference_config.chat_template,
+        )
         
-        return [p / sum(seq_prob) for p in seq_prob]
+        batch_messages = [messages + [{"role": "assistant", "content": cand}] for cand in answer_candidates]
+
+        chat_prompts = [
+            self._tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_genertion_prompt=False,
+                continue_final_message=True,
+                chat_template=inference_config.chat_template,
+            )
+            for messages in batch_messages
+        ]
+        tokenized_inputs = self._tokenizer(
+            chat_prompts, 
+            padding=True, 
+            truncation=True, 
+            add_special_tokens=False, # chat_template already added special tokens
+            return_tensors="pt"
+        ).to(self.devices[1])
+        
+        with torch.no_grad():
+            outputs = self._embed(**tokenized_inputs)
+        
+        log_probs = torch.nn.functional.log_softmax(outputs.logits[:, len(prefix)-1:-1], dim=-1)
+        candidate_ids = tokenized_inputs.input_ids[:, len(prefix):]
+        
+        log_probs = log_probs.gather(2, candidate_ids.unsqueeze(-1)).squeeze(-1)
+        pad_mask = (candidate_ids == self._tokenizer.pad_token_id) | (candidate_ids == self._tokenizer.eos_token_id)
+        log_probs[pad_mask] = 0
+        
+        seq_log_probs = log_probs.sum(dim=1)
+        
+        if normalize:
+            answer_probs = torch.exp(seq_log_probs - torch.logsumexp(seq_log_probs, dim=0))
+            
+            return answer_probs.data.cpu().float().tolist()
+        
+        return seq_log_probs.data.cpu().float().tolist()
     
 def truncate_generations(text: str, token_ids: list[int], token_probs: list[dict], finish_reason: str, stop_sequences: list[str]):
     if text.strip() != ''.join(p[i].decoded_token for i, p in zip(token_ids, token_probs)).strip():

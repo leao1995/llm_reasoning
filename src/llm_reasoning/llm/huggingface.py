@@ -202,7 +202,7 @@ class HuggingFaceModel(LLM):
         
         return embedding
     
-    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig):
+    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig, normalize: bool=True):
         assert messages[-1]["role"] == "user"
         
         prefix = self._tokenizer.apply_chat_template(
@@ -243,9 +243,13 @@ class HuggingFaceModel(LLM):
         log_probs[pad_mask] = 0
         
         seq_log_probs = log_probs.sum(dim=1)
-        answer_probs = torch.exp(seq_log_probs - torch.logsumexp(seq_log_probs, dim=0))
         
-        return answer_probs.data.cpu().float().tolist()
+        if normalize:
+            answer_probs = torch.exp(seq_log_probs - torch.logsumexp(seq_log_probs, dim=0))
+            
+            return answer_probs.data.cpu().float().tolist()
+        
+        return seq_log_probs.data.cpu().float().tolist()
     
 def truncate_generations(text: str, token_probs: list[dict], finish_reason: str, stop_sequences: list[str]):
     '''

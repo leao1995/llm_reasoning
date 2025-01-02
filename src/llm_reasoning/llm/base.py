@@ -64,5 +64,5 @@ class LLM(BaseModel):
     def get_prompt_embedding(self, messages: list[dict], inference_config: InferenceConfig):
         return None
         
-    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig):
+    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig, normalize: bool=True):
         return None

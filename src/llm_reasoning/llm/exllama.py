@@ -105,5 +105,5 @@ class ExLlamaModel(LLM):
         
         return embedding
     
-    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig):
+    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig, normalize: bool=True):
         raise NotImplementedError()

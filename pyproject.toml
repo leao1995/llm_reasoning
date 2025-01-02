@@ -23,6 +23,8 @@ dependencies = [
     "seaborn",
     "pyvis",
     "torch-scatter @ https://data.pyg.org/whl/torch-2.5.0+cu124.html",
+    "tarski",
+    "pddl",
 ]
 
 [tool.setuptools.packages.find]

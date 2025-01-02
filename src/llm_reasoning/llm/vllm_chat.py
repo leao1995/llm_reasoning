@@ -64,7 +64,7 @@ class vLLMChatModel(LLM):
         
         return response.json()["prompt_logprobs"]
         
-    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig):
+    def get_answer_probs(self, messages: list[dict], answer_candidates: list[str], inference_config: InferenceConfig, normalize: bool=True):
         assert messages[-1]["role"] == "user"
         
         batch_messages = [messages] + [messages + [{"role": "assistant", "content": cand}] for cand in answer_candidates]
@@ -76,9 +76,14 @@ class vLLMChatModel(LLM):
             ))
         prefix_len = len(prompt_logprobs[0])
         seq_log_prob = [sum(next(iter(t.values()))['logprob'] for t in prompt_logprobs[i+1][prefix_len:]) for i in range(len(answer_candidates))]
-        seq_prob = [np.exp(logprob) for logprob in seq_log_prob]
         
-        return [p / sum(seq_prob) for p in seq_prob]
+        if normalize:
+            seq_prob = [np.exp(logprob) for logprob in seq_log_prob]
+            seq_prob = [p / sum(seq_prob) for p in seq_prob]
+            
+            return seq_prob
+        
+        return seq_log_prob
         
         
 def truncate_generations(text: str, token_probs: list[dict], finish_reason: str, stop_sequences: list[str]):

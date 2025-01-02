@@ -18,7 +18,7 @@ class Action(BaseModel):
     model_config = ConfigDict(frozen=True, strict=True, arbitrary_types_allowed=True)
     
     text: str
-    finish_reason: str
+    finish_reason: Optional[str] = None
     log_prob: Optional[float] = None
     confidence: Optional[float] = None
     embedding: Optional[torch.Tensor] = None
