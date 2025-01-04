@@ -490,6 +490,7 @@ class AdaPGTS(Policy):
     depth_limit: int
     max_search_steps: int
     edge_type: str
+    num_chains: int
     
     @classmethod
     def from_config(cls, env: Task, policy_config: OmegaConf):
@@ -508,6 +509,7 @@ class AdaPGTS(Policy):
             depth_limit=policy_config.depth_limit,
             edge_type=policy_config.edge_type,
             max_search_steps=policy_config.max_search_steps,
+            num_chains=policy_config.num_chains,
         )
         
     async def _rollout(self, state: State):
@@ -540,15 +542,32 @@ class AdaPGTS(Policy):
             
         return trajectory, total_reward, node
     
-    def run(self, state: State) -> tuple[list[Solution], dict]:
-        trajectory, total_reward, final_node = asyncio.run(self._rollout(state))
+    async def _run(self, state: State) -> tuple[list[Solution], dict]:
+        rollouts = [asyncio.create_task(self._rollout(state)) for _ in range(self.num_chains)]
+        outputs = await asyncio.gather(*rollouts)
+        
+        solutions = []
+        trajectory = []
+        total_reward = []
+        dummy_node = Node(None, None, {}, None)
+        for traj, traj_reward, final_node in outputs:
+            solutions.append(Solution(text=final_node.state.to_response(), weight=traj_reward))
+            root = traj[0]["node"][0]
+            root.parent = dummy_node
+            dummy_node.children.append(root)
+            trajectory.append(traj)
+            total_reward.append(traj_reward)
+        
         info = {
-            "root": trajectory[0]["node"][0],
+            "root": dummy_node,
             "trajectory": trajectory,
             "total_reward": total_reward,
         }
         
-        return [Solution(text=final_node.state.to_response())], info
+        return solutions, info
+    
+    def run(self, state: State) -> tuple[list[Solution], dict]:
+        return asyncio.run(self._run(state))
     
     def _learn(self, buffer, optimizer, num_iters, batch_size, vf_weight, ent_weight, ratio_clip, grad_norm):
         for _ in range(num_iters):

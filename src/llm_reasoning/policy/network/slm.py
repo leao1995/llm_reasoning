@@ -10,7 +10,7 @@ def collate_fn(batch, tokenizer):
             trajectory += f"Step {i}: {node['text']}\n"
         trajectories.append(trajectory.strip())
         
-    return tokenizer(trajectories, padding=True, return_tensors="pt")
+    return tokenizer(trajectories, padding=True, truncation=True, return_tensors="pt")
 
 class SLMPolicy(nn.Module):
     
