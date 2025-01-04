@@ -10,7 +10,7 @@ from collections import namedtuple
 
 from llm_reasoning.task.base import State, Action, Task, Solution
 from llm_reasoning.policy.base import Policy
-from llm_reasoning.policy.network import gnn, xformer, san, gps, prompting
+from llm_reasoning.policy.network import gnn, xformer, san, gps, prompting, slm
 from llm_reasoning.policy.utils import plot_reward, ppo_advantage, ReplayBuffer
 
 logger = logging.getLogger(__name__)
@@ -339,10 +339,18 @@ class TreeSearchPolicy(BaseModel):
                 inference_config=env.inference_config,
                 num_actions=num_actions,
             )
+        elif policy_config.policy_type == "slm":
+            policy_network = slm.SLMPolicy(
+                base_model=policy_config.base_model,
+                freeze_backbone=policy_config.freeze_backbone,
+                hidden_dim=policy_config.hidden_dim,
+                dropout=policy_config.dropout,
+                num_actions=num_actions
+            ).to(policy_config.device)
         else:
             raise NotImplementedError
         
-        logger.info(f"Policy {policy_config.policy_type} has {sum(p.numel() for p in policy_network.parameters())} parameters")
+        logger.info(f"Policy {policy_config.policy_type} has {sum(p.numel() for p in policy_network.parameters() if p.requires_grad)} parameters")
 
         return cls(
             policy_dir=policy_config.policy_dir,
@@ -377,6 +385,14 @@ class TreeSearchPolicy(BaseModel):
             self.policy_network.eval()
             
     def _prepare_inputs(self, nodes: list[Node]):
+        def _get_path(node):
+                path = []
+                current = node
+                while current.parent:
+                    path.append({"node_id": current.node_id, "depth": current.depth, "text": current.state.trace[-1].text})
+                    current = current.parent
+                return path[::-1]
+        
         batch = [
             {
                 "node_features": node.node_features,
@@ -399,14 +415,6 @@ class TreeSearchPolicy(BaseModel):
             batch_inputs = gps.collate_fn(batch, self.policy_network.num_rw_steps)
             batch_inputs = {k: v.to(self.policy_device) for k, v in batch_inputs.items()}
         elif self.policy_type == "prompting":
-            def _get_path(node):
-                path = []
-                current = node
-                while current.parent:
-                    path.append({"node_id": current.node_id, "depth": current.depth, "text": current.state.trace[-1].text})
-                    current = current.parent
-                return path[::-1]
-            
             batch = [
                 {
                     "question": next((msg["content"] for msg in reversed(node.state.to_messages()) if msg["role"] == "user")),
@@ -415,6 +423,16 @@ class TreeSearchPolicy(BaseModel):
                 for node in nodes
             ]
             batch_inputs = prompting.collate_fn(batch)
+        elif self.policy_type == "slm":
+            batch = [
+                {
+                    "question": next((msg["content"] for msg in reversed(node.state.to_messages()) if msg["role"] == "user")),
+                    "reasoning_path": _get_path(node)
+                }
+                for node in nodes
+            ]
+            batch_inputs = slm.collate_fn(batch, self.policy_network.tokenizer)
+            batch_inputs = {k: v.to(self.policy_device) for k, v in batch_inputs.items()}
         else:
             raise NotImplementedError()
         

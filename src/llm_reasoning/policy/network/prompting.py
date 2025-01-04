@@ -20,6 +20,7 @@ Important notes:
 - Sibling nodes are generated dynamically when you choose to explore them
 - Your goal is to find the most logical path to the correct answer
 - Consider each step carefully before choosing an action
+- Please choose only from the available actions list given below
 - Choose `Branch` when current node seem incorrect or inefficient towards a solution
 - Choose `Backtrack` to revise a previous node that may lead to incorrect or inefficient solution
 - When `Backtrack` to a previous node in the current path, specify its node id in the format 'Node Id: NODE_ID'
@@ -47,7 +48,7 @@ Instructions:
    - Are there better approaches to try?
    - Have you reached a complete solution?
 4. You can only choose one action from the available actions above 
-5. Format your final action choice as: <answer>YOUR_CHOSEN_ACTION</answer> and optionally provide your thinking process
+5. Format your final action choice as: <answer>YOUR_CHOSEN_ACTION</answer> and optionally provide your thinking process. `YOUR_CHOSEN_ACTION` should be one of the available actions.
 """.strip()
 
 def collate_fn(batch):
@@ -86,11 +87,11 @@ class LLMPolicy(nn.Module):
             return 0
         elif action == "Branch":
             return 1
-        elif re.search(r"Node Id:\s*(\d+)", action):
+        elif "Node Id" in action:
             back_node_id = re.search(r"Node Id:\s*(\d+)", action).group(1)
             cur_node_depth = reasoning_path[-1]["depth"]
             path_node_depth = {step["node_id"]: step["depth"] for step in reasoning_path}
-            back_node_depth = path_node_depth[back_node_id]
+            back_node_depth = path_node_depth[int(back_node_id)]
             backtrack_step = cur_node_depth - back_node_depth
             return backtrack_step + 1 # backtrack action id
         elif action == "Terminate":
@@ -100,7 +101,7 @@ class LLMPolicy(nn.Module):
     
     @retry(ParsingException, tries=5)
     def _act(self, question: str, reasoning_path: list[dict], available_actions: list[str]):
-        formatted_reasoning_path = "\n".join(f"Node Id: {step['node_id']} Step: {step['text']}" for step in reasoning_path)
+        formatted_reasoning_path = "\n".join(f"Node Id: {step['node_id']} Text: {step['text']}" for step in reasoning_path)
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": USER_PROMPT.format(
@@ -120,8 +121,7 @@ class LLMPolicy(nn.Module):
         actionid_to_nodeid = {i+1: node["node_id"] for i, node in enumerate(reasoning_path[::-1])}
         
         for i, m in enumerate(action_mask):
-            if not m:
-                continue
+            if not m: continue
             
             if i == 0:
                 available_actions.append("Continue")
