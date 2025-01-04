@@ -321,7 +321,7 @@ class StrategyQA(Task):
         return next_state, reward, done, info
     
     def propose_actions(self, state: SQState, num_actions: int) -> list[SQAction]:
-        inference_config = self.inference_config.model_copy(update={"model_config": ConfigDict(frozen=False)})
+        inference_config = self.inference_config.model_copy(update={"model_config": ConfigDict(frozen=False)}, deep=True)
         inference_config.stop_sequences += [ACTION_STEP_SEPARATOR]
         inference_config.max_tokens = MAX_STEP_TOKENS
         

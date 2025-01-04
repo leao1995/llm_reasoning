@@ -12,7 +12,7 @@ from copy import deepcopy
 from retry import retry
 from tarski.io import PDDLReader
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from collections import defaultdict, Counter
 
 from llm_reasoning.task.base import Task, Solution, Action, State
@@ -102,17 +102,26 @@ class BWAction(Action):
     
 
 class BWState(State):
-    problem: str
+    problem: list[dict]
+    question: str
     answer: BWExample
     blocks_state: list[str]
     trace: list[BWAction]
     embedding: Optional[torch.Tensor] = None
     
     def __str__(self):
-        return "".join([self.problem, self.to_response()])
+        return "".join([self.question, self.to_response()])
     
     def __hash__(self):
         return hash(str(self))
+    
+    def to_messages(self):
+        messages = self.problem.copy()
+        if self.trace:
+            assistant_prefill = self.to_response() + ACTION_STEP_SEPARATOR
+            messages.append({"role": "assistant", "content": assistant_prefill})
+            
+        return messages
     
     def __eq__(self, other):
         return isinstance(other, BWState) and str(self) == str(other)
@@ -183,6 +192,10 @@ class BlocksWorld(Task):
                     new_examples.append(example)
             examples = deepcopy(new_examples)
             icl_templates.append(get_icl_demo(examples))
+            
+        ## change default chat_template
+        inference_config = inference_config.model_copy(update={"model_config": ConfigDict(frozen=False)}, deep=True)
+        inference_config.chat_template = CHAT_TEMPLATE
         
         return cls(
             data=data,
@@ -212,8 +225,6 @@ class BlocksWorld(Task):
         question += f"\nMy goal is to have that {test_example.goal}."
         ## plan prefix
         question += f"\n\nMy plan is as follows:\n\n[PLAN]\n"
-        ## keywords translation
-        question = question.replace("-", " ").replace("ontable", "on the table")
         
         # get question embedding
         embedding = self.model.get_prompt_embedding(
@@ -221,8 +232,20 @@ class BlocksWorld(Task):
             inference_config=InferenceConfig(chat_template=CHAT_TEMPLATE)
         )
         
+        # get messages
+        icl_template = self.icl_templates[0]
+        problem = icl_template.replace(
+            "<init_state>", test_example.init
+        ).replace(
+            "<goals>", test_example.goal
+        ).replace(
+            "<action>", ""
+        )
+        messages = [{"role": "user", "content": problem}]
+        
         return BWState(
-            problem=question,
+            problem=messages,
+            question=question,
             answer=test_example,
             blocks_state=[test_example.init],
             trace=[],
@@ -257,12 +280,13 @@ class BlocksWorld(Task):
     
     def transition(self, state: BWState, action: BWAction) -> BWState:
         embedding = self.model.get_prompt_embedding(
-            messages=[{"role": "user", "content": state.problem + state.to_response() + ACTION_STEP_SEPARATOR + action.text}],
+            messages=[{"role": "user", "content": state.question + state.to_response() + ACTION_STEP_SEPARATOR + action.text}],
             inference_config=InferenceConfig(chat_template=CHAT_TEMPLATE)
         )
         
         return BWState(
             problem=state.problem,
+            question=state.question,
             answer=state.answer,
             blocks_state=state.blocks_state + [self._update_blocks_state(state.blocks_state[-1], action.text)],
             trace=state.trace + [action],
@@ -448,6 +472,11 @@ def parse_blocksworld(problem, config, plan_code, return_plan, shuffle=False):
             objs = [OBJS[obj] for obj in objs]
             PLAN += config["actions"][act_name].format(*objs) + "\n"
         PLAN += "[PLAN END]\n"
+        
+    # keywords translation
+    INIT = INIT.replace("-", " ").replace("ontable", "on the table")
+    GOAL = GOAL.replace("-", " ").replace("ontable", "on the table")
+    PLAN = PLAN.replace("-", " ").replace("ontable", "on the table")
     
     return INIT, GOAL, PLAN
 

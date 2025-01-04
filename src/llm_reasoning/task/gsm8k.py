@@ -308,7 +308,7 @@ class GSM8K(Task):
         return next_state, reward, done, info
     
     def propose_actions(self, state: GSM8KState, num_actions: int) -> list[GSM8KAction]:
-        inference_config = self.inference_config.model_copy(update={"model_config": ConfigDict(frozen=False)})
+        inference_config = self.inference_config.model_copy(update={"model_config": ConfigDict(frozen=False)}, deep=True)
         inference_config.stop_sequences += [ACTION_STEP_SEPARATOR]
         inference_config.max_tokens = MAX_STEP_TOKENS
         

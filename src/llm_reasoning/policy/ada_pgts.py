@@ -10,7 +10,7 @@ from collections import namedtuple
 
 from llm_reasoning.task.base import State, Action, Task, Solution
 from llm_reasoning.policy.base import Policy
-from llm_reasoning.policy.network import gnn, xformer, san, gps
+from llm_reasoning.policy.network import gnn, xformer, san, gps, prompting
 from llm_reasoning.policy.utils import plot_reward, ppo_advantage, ReplayBuffer
 
 logger = logging.getLogger(__name__)
@@ -277,10 +277,10 @@ class TreeSearchPolicy(BaseModel):
     num_actions: int
     
     @classmethod
-    def from_config(cls, policy_config: OmegaConf):
+    def from_config(cls, env: Task, policy_config: OmegaConf):
         # 0: continue
         # 1: branch
-        # 2 - max_depth: bracktrack 1- max_depth-1 steps
+        # 2 - max_depth: bracktrack 1 - max_depth-1 steps
         # max_depth+1: terminate
         num_actions = policy_config.depth_limit + 2
         
@@ -333,6 +333,12 @@ class TreeSearchPolicy(BaseModel):
                 batch_norm=policy_config.batch_norm,
                 num_actions=num_actions,
             ).to(policy_config.device)
+        elif policy_config.policy_type == "prompting":
+            policy_network = prompting.LLMPolicy(
+                model=env.model,
+                inference_config=env.inference_config,
+                num_actions=num_actions,
+            )
         else:
             raise NotImplementedError
         
@@ -382,16 +388,35 @@ class TreeSearchPolicy(BaseModel):
         ]
         if self.policy_type == "gnn":
             batch_inputs = gnn.collate_fn(batch)
+            batch_inputs = {k: v.to(self.policy_device) for k, v in batch_inputs.items()}
         elif self.policy_type == "xformer":
             batch_inputs = xformer.collate_fn(batch)
+            batch_inputs = {k: v.to(self.policy_device) for k, v in batch_inputs.items()}
         elif self.policy_type == "san":
             batch_inputs = san.collate_fn(batch, max_freqs=10)
+            batch_inputs = {k: v.to(self.policy_device) for k, v in batch_inputs.items()}
         elif self.policy_type == "gps":
             batch_inputs = gps.collate_fn(batch, self.policy_network.num_rw_steps)
+            batch_inputs = {k: v.to(self.policy_device) for k, v in batch_inputs.items()}
+        elif self.policy_type == "prompting":
+            def _get_path(node):
+                path = []
+                current = node
+                while current.parent:
+                    path.append({"node_id": current.node_id, "depth": current.depth, "text": current.state.trace[-1].text})
+                    current = current.parent
+                return path[::-1]
+            
+            batch = [
+                {
+                    "question": next((msg["content"] for msg in reversed(node.state.to_messages()) if msg["role"] == "user")),
+                    "reasoning_path": _get_path(node)
+                }
+                for node in nodes
+            ]
+            batch_inputs = prompting.collate_fn(batch)
         else:
             raise NotImplementedError()
-        
-        batch_inputs = {k: v.to(self.policy_device) for k, v in batch_inputs.items()}
         
         return batch_inputs
     
@@ -452,7 +477,7 @@ class AdaPGTS(Policy):
     def from_config(cls, env: Task, policy_config: OmegaConf):
         assert env.inference_config.temperature > 0, "greedy decoding cannot produce multiple reasoning chains"
         
-        policy = TreeSearchPolicy.from_config(policy_config)
+        policy = TreeSearchPolicy.from_config(env, policy_config)
         policy.load()
         policy.set_status("eval")
         
