@@ -1,0 +1,606 @@
+[
+  {
+    "instance_file": "generated_basic_3/instance-99.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack a b)\n(put-down a)\n(pick-up c)\n(stack c b)\n(pick-up a)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-341.pddl",
+    "plan_code": "(pick-up a)\n(stack a b)\n(unstack c d)\n(put-down c)\n(pick-up d)\n(stack d a)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-187.pddl",
+    "plan_code": "(unstack b d)\n(put-down b)\n(pick-up d)\n(stack d a)\n(pick-up c)\n(stack c d)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-275.pddl",
+    "plan_code": "(unstack b d)\n(stack b a)\n(pick-up c)\n(stack c d)\n(unstack b a)\n(stack b c)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-134.pddl",
+    "plan_code": "(unstack d b)\n(put-down d)\n(unstack b c)\n(stack b d)\n(unstack c a)\n(put-down c)\n(unstack b d)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-383.pddl",
+    "plan_code": "(unstack a b)\n(stack a d)\n(unstack b c)\n(put-down b)\n(pick-up c)\n(stack c b)\n(unstack a d)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-298.pddl",
+    "plan_code": "(unstack c a)\n(stack c b)\n(unstack a d)\n(put-down a)\n(pick-up d)\n(stack d a)\n(unstack c b)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-141.pddl",
+    "plan_code": "(unstack b a)\n(put-down b)\n(unstack d c)\n(stack d b)\n(pick-up c)\n(stack c a)\n(unstack d b)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-310.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(pick-up a)\n(stack a c)\n(unstack d b)\n(stack d a)\n(pick-up b)\n(stack b d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-316.pddl",
+    "plan_code": "(unstack b d)\n(put-down b)\n(pick-up c)\n(stack c d)\n(pick-up a)\n(stack a c)\n(pick-up b)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-380.pddl",
+    "plan_code": "(unstack c d)\n(put-down c)\n(unstack d b)\n(put-down d)\n(unstack b a)\n(put-down b)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-66.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(unstack b c)\n(put-down b)\n(pick-up a)\n(stack a c)\n(pick-up b)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-238.pddl",
+    "plan_code": "(unstack d a)\n(stack d b)\n(unstack a c)\n(put-down a)\n(unstack d b)\n(stack d a)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-193.pddl",
+    "plan_code": "(unstack d b)\n(put-down d)\n(unstack b a)\n(stack b d)\n(pick-up a)\n(stack a b)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-227.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(pick-up d)\n(stack d c)\n(pick-up b)\n(stack b d)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-179.pddl",
+    "plan_code": "(unstack b c)\n(put-down b)\n(unstack c a)\n(put-down c)\n(unstack a d)\n(stack a b)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-27.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(pick-up a)\n(stack a c)\n(unstack b d)\n(put-down b)\n(pick-up d)\n(stack d a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-60.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(unstack c a)\n(put-down c)\n(pick-up a)\n(stack a c)\n(pick-up b)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-99.pddl",
+    "plan_code": "(unstack a d)\n(stack a c)\n(unstack d b)\n(put-down d)\n(unstack a c)\n(stack a b)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-150.pddl",
+    "plan_code": "(unstack b d)\n(put-down b)\n(unstack d c)\n(stack d b)\n(pick-up c)\n(stack c a)\n(unstack d b)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-137.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(unstack b d)\n(put-down b)\n(pick-up c)\n(stack c b)\n(pick-up d)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-82.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack a b)\n(put-down a)\n(pick-up c)\n(stack c a)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-153.pddl",
+    "plan_code": "(unstack c d)\n(put-down c)\n(unstack d b)\n(put-down d)\n(pick-up a)\n(stack a d)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-195.pddl",
+    "plan_code": "(unstack d a)\n(put-down d)\n(unstack a b)\n(put-down a)\n(unstack b c)\n(stack b d)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-214.pddl",
+    "plan_code": "(unstack a d)\n(put-down a)\n(pick-up d)\n(stack d a)\n(pick-up c)\n(stack c d)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-28.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack a b)\n(put-down a)\n(pick-up b)\n(stack b c)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-258.pddl",
+    "plan_code": "(unstack d a)\n(stack d b)\n(unstack a c)\n(put-down a)\n(unstack d b)\n(stack d a)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-415.pddl",
+    "plan_code": "(unstack c a)\n(stack c d)\n(unstack a b)\n(put-down a)\n(unstack c d)\n(stack c a)\n(pick-up d)\n(stack d b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-239.pddl",
+    "plan_code": "(unstack c a)\n(stack c d)\n(pick-up a)\n(stack a b)\n(unstack c d)\n(stack c a)\n(pick-up d)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-288.pddl",
+    "plan_code": "(unstack c b)\n(put-down c)\n(pick-up b)\n(stack b a)\n(pick-up d)\n(stack d b)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-177.pddl",
+    "plan_code": "(unstack c d)\n(put-down c)\n(unstack a b)\n(stack a c)\n(pick-up d)\n(stack d a)\n(pick-up b)\n(stack b d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-490.pddl",
+    "plan_code": "(unstack e c)\n(put-down e)\n(pick-up d)\n(stack d c)\n(pick-up a)\n(stack a d)\n(pick-up b)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-105.pddl",
+    "plan_code": "(unstack b a)\n(stack b c)\n(unstack a d)\n(put-down a)\n(unstack b c)\n(stack b d)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-88.pddl",
+    "plan_code": "(unstack d b)\n(stack d a)\n(unstack b c)\n(put-down b)\n(unstack d a)\n(stack d c)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-443.pddl",
+    "plan_code": "(unstack b a)\n(put-down b)\n(unstack d c)\n(put-down d)\n(pick-up a)\n(stack a d)\n(pick-up c)\n(stack c b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-212.pddl",
+    "plan_code": "(unstack c b)\n(put-down c)\n(pick-up d)\n(stack d c)\n(unstack b a)\n(stack b d)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-326.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(unstack c b)\n(stack c d)\n(pick-up b)\n(stack b c)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-449.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(pick-up e)\n(stack e a)\n(unstack c d)\n(stack c e)\n(pick-up b)\n(stack b d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-475.pddl",
+    "plan_code": "(pick-up d)\n(stack d a)\n(pick-up c)\n(stack c d)\n(unstack e b)\n(stack e c)\n(pick-up b)\n(stack b e)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-57.pddl",
+    "plan_code": "(unstack b a)\n(put-down b)\n(unstack a c)\n(put-down a)\n(pick-up b)\n(stack b c)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-271.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(pick-up c)\n(stack c a)\n(pick-up d)\n(stack d c)\n(pick-up b)\n(stack b d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-277.pddl",
+    "plan_code": "(unstack d a)\n(put-down d)\n(unstack a b)\n(put-down a)\n(unstack b c)\n(stack b a)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-54.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(pick-up c)\n(stack c b)\n(pick-up a)\n(stack a c)\n(pick-up d)\n(stack d a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-405.pddl",
+    "plan_code": "(unstack c d)\n(put-down c)\n(unstack d a)\n(put-down d)\n(pick-up b)\n(stack b a)\n(pick-up c)\n(stack c b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-157.pddl",
+    "plan_code": "(unstack a d)\n(stack a c)\n(unstack d b)\n(put-down d)\n(pick-up b)\n(stack b a)\n(pick-up d)\n(stack d b)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-39.pddl",
+    "plan_code": "(unstack b c)\n(put-down b)\n(unstack c a)\n(put-down c)\n(pick-up a)\n(stack a b)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-392.pddl",
+    "plan_code": "(unstack d b)\n(stack d c)\n(unstack b a)\n(put-down b)\n(unstack d c)\n(stack d a)\n(pick-up b)\n(stack b d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-493.pddl",
+    "plan_code": "(unstack b d)\n(stack b a)\n(unstack e c)\n(put-down e)\n(pick-up d)\n(stack d e)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-3.pddl",
+    "plan_code": "(unstack b c)\n(put-down b)\n(unstack c a)\n(put-down c)\n(pick-up b)\n(stack b a)\n(pick-up c)\n(stack c b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-10.pddl",
+    "plan_code": "(unstack c b)\n(put-down c)\n(pick-up b)\n(stack b c)\n(unstack d a)\n(put-down d)\n(pick-up a)\n(stack a d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-417.pddl",
+    "plan_code": "(unstack b c)\n(put-down b)\n(unstack c a)\n(put-down c)\n(unstack a d)\n(put-down a)\n(pick-up d)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-303.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(unstack c a)\n(stack c b)\n(pick-up a)\n(stack a d)\n(unstack c b)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-281.pddl",
+    "plan_code": "(unstack b c)\n(put-down b)\n(pick-up d)\n(stack d b)\n(unstack c a)\n(put-down c)\n(pick-up a)\n(stack a d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-152.pddl",
+    "plan_code": "(unstack d b)\n(put-down d)\n(unstack b c)\n(put-down b)\n(unstack c a)\n(stack c b)\n(pick-up d)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-68.pddl",
+    "plan_code": "(unstack d a)\n(put-down d)\n(unstack a b)\n(put-down a)\n(unstack b c)\n(stack b d)\n(pick-up a)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-266.pddl",
+    "plan_code": "(unstack a b)\n(stack a d)\n(pick-up b)\n(stack b c)\n(unstack a d)\n(stack a b)\n(pick-up d)\n(stack d a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-311.pddl",
+    "plan_code": "(unstack d b)\n(stack d a)\n(unstack b c)\n(put-down b)\n(pick-up c)\n(stack c b)\n(unstack d a)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-211.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(unstack c b)\n(stack c a)\n(unstack b d)\n(put-down b)\n(pick-up d)\n(stack d b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-357.pddl",
+    "plan_code": "(unstack b c)\n(put-down b)\n(unstack d a)\n(put-down d)\n(pick-up a)\n(stack a b)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-22.pddl",
+    "plan_code": "(unstack d c)\n(stack d b)\n(unstack c a)\n(put-down c)\n(unstack d b)\n(stack d a)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-93.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack a d)\n(put-down a)\n(pick-up c)\n(stack c a)\n(unstack d b)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-205.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(unstack c d)\n(put-down c)\n(unstack d b)\n(stack d c)\n(pick-up b)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-103.pddl",
+    "plan_code": "(unstack c d)\n(put-down c)\n(unstack d b)\n(put-down d)\n(pick-up c)\n(stack c d)\n(unstack b a)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-389.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(unstack b c)\n(stack b a)\n(pick-up c)\n(stack c b)\n(pick-up d)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-338.pddl",
+    "plan_code": "(unstack b a)\n(put-down b)\n(unstack a d)\n(put-down a)\n(unstack d c)\n(stack d b)\n(pick-up a)\n(stack a d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-419.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack a d)\n(stack a b)\n(pick-up d)\n(stack d a)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-468.pddl",
+    "plan_code": "(unstack b d)\n(put-down b)\n(unstack a e)\n(stack a d)\n(pick-up e)\n(stack e b)\n(pick-up c)\n(stack c e)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-96.pddl",
+    "plan_code": "(unstack a d)\n(put-down a)\n(pick-up d)\n(stack d a)\n(unstack c b)\n(put-down c)\n(pick-up b)\n(stack b d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-268.pddl",
+    "plan_code": "(unstack c b)\n(put-down c)\n(unstack b d)\n(stack b a)\n(pick-up c)\n(stack c b)\n(pick-up d)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-441.pddl",
+    "plan_code": "(unstack c b)\n(put-down c)\n(pick-up b)\n(stack b c)\n(unstack a d)\n(stack a b)\n(pick-up d)\n(stack d a)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-11.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack a b)\n(put-down a)\n(pick-up b)\n(stack b a)\n(pick-up c)\n(stack c b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-318.pddl",
+    "plan_code": "(unstack c d)\n(put-down c)\n(unstack d a)\n(stack d c)\n(pick-up b)\n(stack b d)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-128.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(unstack a b)\n(stack a d)\n(pick-up c)\n(stack c a)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-421.pddl",
+    "plan_code": "(unstack b d)\n(put-down b)\n(unstack d a)\n(stack d b)\n(pick-up a)\n(stack a d)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-138.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(pick-up c)\n(stack c b)\n(pick-up d)\n(stack d c)\n(pick-up a)\n(stack a d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-369.pddl",
+    "plan_code": "(unstack a d)\n(put-down a)\n(unstack d b)\n(put-down d)\n(unstack b c)\n(stack b a)\n(pick-up c)\n(stack c b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-289.pddl",
+    "plan_code": "(unstack a d)\n(put-down a)\n(unstack b c)\n(stack b d)\n(pick-up c)\n(stack c b)\n(pick-up a)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-256.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(unstack c d)\n(stack c a)\n(pick-up d)\n(stack d c)\n(pick-up b)\n(stack b d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-24.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(unstack b d)\n(put-down b)\n(unstack d c)\n(stack d b)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-75.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(unstack c a)\n(put-down c)\n(unstack a b)\n(stack a c)\n(pick-up d)\n(stack d a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-76.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(pick-up b)\n(stack b a)\n(unstack c d)\n(put-down c)\n(pick-up d)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-43.pddl",
+    "plan_code": "(unstack d a)\n(put-down d)\n(unstack a b)\n(stack a d)\n(pick-up c)\n(stack c b)\n(unstack a d)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-488.pddl",
+    "plan_code": "(unstack c e)\n(stack c a)\n(unstack e d)\n(put-down e)\n(unstack d b)\n(stack d c)\n(pick-up e)\n(stack e d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-359.pddl",
+    "plan_code": "(unstack c b)\n(stack c a)\n(unstack b d)\n(put-down b)\n(unstack c a)\n(stack c d)\n(pick-up a)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-17.pddl",
+    "plan_code": "(unstack a d)\n(put-down a)\n(unstack d c)\n(put-down d)\n(pick-up c)\n(stack c d)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-247.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack a d)\n(put-down a)\n(unstack d b)\n(put-down d)\n(pick-up c)\n(stack c b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-485.pddl",
+    "plan_code": "(unstack b e)\n(put-down b)\n(unstack e c)\n(stack e b)\n(pick-up a)\n(stack a e)\n(pick-up d)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-409.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(pick-up c)\n(stack c d)\n(unstack b a)\n(stack b c)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-171.pddl",
+    "plan_code": "(unstack d b)\n(stack d a)\n(unstack b c)\n(put-down b)\n(unstack d a)\n(stack d b)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-221.pddl",
+    "plan_code": "(unstack a d)\n(put-down a)\n(unstack d c)\n(stack d a)\n(pick-up b)\n(stack b d)\n(pick-up c)\n(stack c b)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-5.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(unstack b c)\n(put-down b)\n(pick-up c)\n(stack c a)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-352.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(pick-up a)\n(stack a d)\n(pick-up b)\n(stack b a)\n(pick-up c)\n(stack c b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-384.pddl",
+    "plan_code": "(unstack d b)\n(stack d a)\n(pick-up c)\n(stack c b)\n(unstack d a)\n(stack d c)\n(pick-up a)\n(stack a d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-107.pddl",
+    "plan_code": "(unstack d a)\n(put-down d)\n(unstack b c)\n(stack b d)\n(pick-up a)\n(stack a c)\n(unstack b d)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-156.pddl",
+    "plan_code": "(unstack a d)\n(put-down a)\n(pick-up b)\n(stack b a)\n(unstack d c)\n(put-down d)\n(pick-up c)\n(stack c b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-8.pddl",
+    "plan_code": "(unstack b c)\n(stack b a)\n(pick-up d)\n(stack d c)\n(unstack b a)\n(stack b d)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-136.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(unstack a b)\n(stack a d)\n(pick-up c)\n(stack c b)\n(unstack a d)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-18.pddl",
+    "plan_code": "(unstack c b)\n(put-down c)\n(unstack b a)\n(put-down b)\n(pick-up c)\n(stack c b)\n(pick-up a)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-360.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(unstack d c)\n(put-down d)\n(pick-up b)\n(stack b d)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-333.pddl",
+    "plan_code": "(unstack d b)\n(stack d a)\n(pick-up b)\n(stack b c)\n(unstack d a)\n(stack d b)\n(pick-up a)\n(stack a d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-151.pddl",
+    "plan_code": "(unstack d c)\n(stack d a)\n(unstack c b)\n(put-down c)\n(unstack d a)\n(stack d b)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-465.pddl",
+    "plan_code": "(pick-up c)\n(stack c e)\n(unstack b a)\n(put-down b)\n(pick-up a)\n(stack a c)\n(pick-up d)\n(stack d b)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-1.pddl",
+    "plan_code": "(unstack c b)\n(put-down c)\n(unstack b a)\n(put-down b)\n(pick-up a)\n(stack a b)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-498.pddl",
+    "plan_code": "(unstack e b)\n(put-down e)\n(pick-up a)\n(stack a e)\n(unstack c d)\n(stack c b)\n(pick-up d)\n(stack d a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-416.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(unstack b c)\n(put-down b)\n(unstack c d)\n(stack c b)\n(pick-up a)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-319.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(unstack d c)\n(stack d a)\n(pick-up c)\n(stack c d)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-67.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(pick-up b)\n(stack b a)\n(pick-up d)\n(stack d b)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-235.pddl",
+    "plan_code": "(unstack d b)\n(put-down d)\n(pick-up c)\n(stack c d)\n(pick-up b)\n(stack b c)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-377.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(unstack c b)\n(put-down c)\n(unstack b d)\n(stack b a)\n(pick-up c)\n(stack c b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-92.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(unstack c b)\n(put-down c)\n(pick-up a)\n(stack a c)\n(pick-up b)\n(stack b d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-127.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(pick-up d)\n(stack d a)\n(unstack c b)\n(stack c d)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-448.pddl",
+    "plan_code": "(unstack e d)\n(put-down e)\n(unstack d c)\n(put-down d)\n(pick-up e)\n(stack e c)\n(pick-up d)\n(stack d e)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-382.pddl",
+    "plan_code": "(unstack c a)\n(stack c b)\n(unstack a d)\n(put-down a)\n(unstack c b)\n(stack c d)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-340.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(unstack c b)\n(stack c d)\n(unstack b a)\n(put-down b)\n(pick-up a)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-7.pddl",
+    "plan_code": "(unstack a d)\n(put-down a)\n(unstack d b)\n(put-down d)\n(unstack b c)\n(put-down b)\n(pick-up a)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-85.pddl",
+    "plan_code": "(unstack b a)\n(put-down b)\n(unstack a c)\n(stack a b)\n(pick-up c)\n(stack c d)\n(unstack a b)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-52.pddl",
+    "plan_code": "(unstack d b)\n(put-down d)\n(unstack c a)\n(stack c d)\n(pick-up a)\n(stack a b)\n(unstack c d)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-165.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(unstack c a)\n(stack c d)\n(unstack a b)\n(put-down a)\n(pick-up b)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-20.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack b d)\n(stack b a)\n(pick-up d)\n(stack d b)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-305.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(unstack c b)\n(put-down c)\n(pick-up b)\n(stack b a)\n(pick-up d)\n(stack d b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-50.pddl",
+    "plan_code": "(unstack b c)\n(stack b a)\n(pick-up c)\n(stack c d)\n(unstack b a)\n(stack b c)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-120.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack a b)\n(stack a c)\n(pick-up b)\n(stack b a)\n(pick-up d)\n(stack d b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-218.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(unstack b d)\n(put-down b)\n(pick-up c)\n(stack c b)\n(pick-up d)\n(stack d a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-414.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(unstack c d)\n(stack c a)\n(unstack d b)\n(stack d c)\n(pick-up b)\n(stack b d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-345.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack a b)\n(put-down a)\n(pick-up c)\n(stack c b)\n(pick-up a)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-190.pddl",
+    "plan_code": "(unstack b a)\n(put-down b)\n(pick-up a)\n(stack a b)\n(unstack d c)\n(stack d a)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-97.pddl",
+    "plan_code": "(unstack a c)\n(stack a b)\n(unstack c d)\n(put-down c)\n(unstack a b)\n(stack a c)\n(pick-up d)\n(stack d b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-106.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack a d)\n(put-down a)\n(unstack d b)\n(put-down d)\n(pick-up b)\n(stack b d)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-16.pddl",
+    "plan_code": "(unstack b c)\n(put-down b)\n(unstack c a)\n(put-down c)\n(pick-up a)\n(stack a c)\n(pick-up b)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-347.pddl",
+    "plan_code": "(unstack b a)\n(put-down b)\n(unstack a d)\n(stack a b)\n(unstack d c)\n(put-down d)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-308.pddl",
+    "plan_code": "(unstack d b)\n(put-down d)\n(unstack b c)\n(stack b a)\n(pick-up c)\n(stack c d)\n(unstack b a)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-197.pddl",
+    "plan_code": "(unstack c b)\n(put-down c)\n(unstack b d)\n(put-down b)\n(pick-up a)\n(stack a d)\n(pick-up c)\n(stack c a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-285.pddl",
+    "plan_code": "(unstack c b)\n(put-down c)\n(unstack a d)\n(stack a b)\n(pick-up d)\n(stack d a)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-262.pddl",
+    "plan_code": "(unstack d a)\n(put-down d)\n(pick-up c)\n(stack c d)\n(pick-up a)\n(stack a c)\n(pick-up b)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-173.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(unstack b d)\n(put-down b)\n(pick-up a)\n(stack a d)\n(pick-up b)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-35.pddl",
+    "plan_code": "(unstack c b)\n(put-down c)\n(unstack b a)\n(put-down b)\n(pick-up a)\n(stack a c)\n(pick-up b)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-19.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack a d)\n(stack a b)\n(pick-up c)\n(stack c a)\n(pick-up d)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-132.pddl",
+    "plan_code": "(unstack c b)\n(put-down c)\n(unstack b d)\n(stack b c)\n(pick-up d)\n(stack d b)\n(pick-up a)\n(stack a d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-215.pddl",
+    "plan_code": "(unstack d b)\n(stack d a)\n(unstack b c)\n(put-down b)\n(pick-up c)\n(stack c d)\n(pick-up b)\n(stack b c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-129.pddl",
+    "plan_code": "(unstack d c)\n(put-down d)\n(unstack c b)\n(put-down c)\n(unstack b a)\n(put-down b)\n(pick-up a)\n(stack a d)\n"
+  },
+  {
+    "instance_file": "generated_basic_3/instance-95.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(unstack c b)\n(put-down c)\n(pick-up b)\n(stack b c)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-381.pddl",
+    "plan_code": "(unstack a d)\n(put-down a)\n(pick-up c)\n(stack c d)\n(pick-up b)\n(stack b c)\n(pick-up a)\n(stack a b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-199.pddl",
+    "plan_code": "(unstack b d)\n(put-down b)\n(unstack d a)\n(stack d b)\n(unstack a c)\n(put-down a)\n(unstack d b)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-109.pddl",
+    "plan_code": "(unstack c a)\n(put-down c)\n(unstack a d)\n(put-down a)\n(pick-up b)\n(stack b a)\n(pick-up d)\n(stack d b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-374.pddl",
+    "plan_code": "(unstack b c)\n(put-down b)\n(unstack d a)\n(stack d b)\n(pick-up c)\n(stack c a)\n(unstack d b)\n(stack d c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-328.pddl",
+    "plan_code": "(unstack a b)\n(stack a c)\n(unstack b d)\n(put-down b)\n(unstack a c)\n(stack a d)\n(pick-up b)\n(stack b a)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-144.pddl",
+    "plan_code": "(unstack a b)\n(put-down a)\n(unstack b d)\n(put-down b)\n(unstack d c)\n(put-down d)\n(pick-up c)\n(stack c b)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-467.pddl",
+    "plan_code": "(unstack d e)\n(put-down d)\n(unstack e b)\n(stack e a)\n(unstack b c)\n(put-down b)\n(pick-up c)\n(stack c d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-458.pddl",
+    "plan_code": "(pick-up e)\n(stack e d)\n(unstack b c)\n(stack b e)\n(unstack c a)\n(stack c b)\n(pick-up a)\n(stack a c)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-296.pddl",
+    "plan_code": "(unstack a c)\n(put-down a)\n(unstack c d)\n(put-down c)\n(pick-up d)\n(stack d c)\n(pick-up b)\n(stack b d)\n"
+  },
+  {
+    "instance_file": "generated_basic/instance-196.pddl",
+    "plan_code": "(unstack b d)\n(put-down b)\n(unstack d c)\n(put-down d)\n(pick-up a)\n(stack a d)\n(pick-up c)\n(stack c a)\n"
+  }
+]
