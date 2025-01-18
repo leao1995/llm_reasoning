@@ -574,8 +574,14 @@ def apply_change(change, state):
             c = c[4:]
         success = 0
         if c.startswith("the hand"):
-            old = c.split("was")[1].split("and")[0].strip()
-            new = c.split("now")[1].strip()
+            match = re.search(r"was (.*?) (?:and is now|and)", c)
+            old = match.group(1).strip() if match else ""
+            if "and is now" in c:
+                new = c.split("now")[1].strip()
+            elif "and" in c:
+                new = c.split("and")[1].strip()
+            else:
+                new = ""  
             for idx in range(len(states)):
                 if ("hand is " + old) in states[idx]:
                     states[idx] = states[idx].replace(old, new)
