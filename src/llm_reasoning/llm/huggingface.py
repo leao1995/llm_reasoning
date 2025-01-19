@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class HuggingFaceModel(LLM):
     model_name: str
     batch_size: int
-    device: str
+    quantize: bool
     
     _model: AutoModelForCausalLM
     _tokenizer: AutoTokenizer
@@ -20,8 +20,10 @@ class HuggingFaceModel(LLM):
         self._model = AutoModelForCausalLM.from_pretrained(
             self.model_name, 
             torch_dtype=torch.bfloat16,
-            attn_implementation="flash_attention_2"
-        ).to(self.device)
+            attn_implementation="flash_attention_2",
+            load_in_4bit=self.quantize,
+            device_map="auto",
+        )
         self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         if self._tokenizer.pad_token_id is None:
             self._tokenizer.pad_token_id = self._tokenizer.eos_token_id
@@ -48,7 +50,7 @@ class HuggingFaceModel(LLM):
                 truncation=True, 
                 add_special_tokens=False, # chat_template already added special tokens
                 return_tensors="pt"
-            ).to(self.device)
+            ).to(self._model.device)
             num_input_tokens = tokenized_inputs.input_ids.shape[1]
             
             with torch.no_grad():
@@ -112,7 +114,7 @@ class HuggingFaceModel(LLM):
             batch_inputs = self._tokenizer.pad(
                 {"input_ids": batch_input_ids[start:start+self.batch_size]},
                 return_tensors="pt"
-            ).to(self.device)
+            ).to(self._model.device)
             num_input_tokens = batch_inputs.input_ids.shape[1]
             
             with torch.no_grad():
@@ -194,7 +196,7 @@ class HuggingFaceModel(LLM):
             continue_final_message=True,
             chat_template=inference_config.chat_template,
             return_tensors="pt"
-        ).to(self.device)
+        ).to(self._model.device)
         with torch.no_grad():
             outputs = self._model(chat_prompt, output_hidden_states=True)
         embedding = outputs.hidden_states[-1][0][-1].data.cpu().float() # last layer -> first batch idx -> last token
@@ -230,7 +232,7 @@ class HuggingFaceModel(LLM):
             truncation=True, 
             add_special_tokens=False, # chat_template already added special tokens
             return_tensors="pt"
-        ).to(self.device)
+        ).to(self._model.device)
         
         with torch.no_grad():
             outputs = self._model(**tokenized_inputs)
