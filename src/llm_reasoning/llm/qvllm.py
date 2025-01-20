@@ -16,7 +16,7 @@ class qvLLMModel(LLM):
     model_name: str
     max_model_len: Optional[int]
     gpu_memory_utilization: float
-    devices: list[str]
+    num_devices: int
     
     _tokenizer: AutoTokenizer
     _model: vLLM
@@ -33,7 +33,7 @@ class qvLLMModel(LLM):
                 gpu_memory_utilization=self.gpu_memory_utilization,
                 quantization="bitsandbytes", 
                 load_format="bitsandbytes",
-                tensor_parallel_size=2,
+                tensor_parallel_size=self.num_devices,
             )
         else:
             self._model = vLLM(
@@ -42,7 +42,7 @@ class qvLLMModel(LLM):
                 gpu_memory_utilization=self.gpu_memory_utilization,
                 quantization="bitsandbytes", 
                 load_format="bitsandbytes",
-                tensor_parallel_size=2,
+                tensor_parallel_size=self.num_devices,
             )
         
         self._tokenizer = AutoTokenizer.from_pretrained(self.model_name)

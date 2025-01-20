@@ -25,7 +25,7 @@ dependencies = [
     "torch-scatter @ https://data.pyg.org/whl/torch-2.5.0%2Bcu124/torch_scatter-2.1.2%2Bpt25cu124-cp310-cp310-linux_x86_64.whl",
     "tarski==0.8.2",
     "pddl==0.4.1",
-    "bitsandbytes",
+    "bitsandbytes>=0.45.0",
     "accelerate",
 ]
 
