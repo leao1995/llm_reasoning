@@ -1,0 +1,56 @@
+{
+  "builder_name": "competition_math",
+  "citation": "@article{hendrycksmath2021,\n  title={Measuring Mathematical Problem Solving With the MATH Dataset},\n  author={Dan Hendrycks\n    and Collin Burns\n    and Saurav Kadavath\n    and Akul Arora\n    and Steven Basart\n    and Eric Tang\n    and Dawn Song\n    and Jacob Steinhardt},\n  journal={arXiv preprint arXiv:2103.03874},\n  year={2021}\n}\n",
+  "config_name": "default",
+  "dataset_name": "competition_math",
+  "dataset_size": 9717605,
+  "description": "The Mathematics Aptitude Test of Heuristics (MATH) dataset consists of problems\nfrom mathematics competitions, including the AMC 10, AMC 12, AIME, and more.\nEach problem in MATH has a full step-by-step solution, which can be used to teach\nmodels to generate answer derivations and explanations.\n",
+  "download_checksums": {
+    "data/MATH.zip": {
+      "num_bytes": 7914977,
+      "checksum": null
+    }
+  },
+  "download_size": 7914977,
+  "features": {
+    "problem": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "level": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "type": {
+      "dtype": "string",
+      "_type": "Value"
+    },
+    "solution": {
+      "dtype": "string",
+      "_type": "Value"
+    }
+  },
+  "homepage": "https://github.com/hendrycks/math",
+  "license": "https://github.com/hendrycks/math/blob/main/LICENSE",
+  "size_in_bytes": 17632582,
+  "splits": {
+    "train": {
+      "name": "train",
+      "num_bytes": 5984772,
+      "num_examples": 7500,
+      "dataset_name": "competition_math"
+    },
+    "test": {
+      "name": "test",
+      "num_bytes": 3732833,
+      "num_examples": 5000,
+      "dataset_name": "competition_math"
+    }
+  },
+  "version": {
+    "version_str": "1.0.0",
+    "major": 1,
+    "minor": 0,
+    "patch": 0
+  }
+}

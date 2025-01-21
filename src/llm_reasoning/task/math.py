@@ -2,7 +2,7 @@ import re
 import logging
 from typing import Optional
 from pydantic import ConfigDict
-from datasets import Dataset, load_dataset
+from datasets import Dataset, load_dataset, load_from_disk
 from omegaconf import OmegaConf
 from collections import Counter, defaultdict
 import torch
@@ -473,7 +473,8 @@ class Math(Task):
     def from_config(cls, model: LLM, inference_config: InferenceConfig, task_config: OmegaConf):
         # test data
         if task_config.split == "train":
-            data = load_dataset("hendrycks/competition_math", trust_remote_code=True, split="train")
+            # data = load_dataset("hendrycks/competition_math", trust_remote_code=True, split="train")
+            data = load_from_disk("data/math/train")
             data = data.shuffle(seed=42)
         else:
             data = load_dataset("HuggingFaceH4/MATH-500", split="test")
