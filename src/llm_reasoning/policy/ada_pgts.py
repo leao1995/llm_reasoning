@@ -362,10 +362,15 @@ class TreeSearchPolicy(BaseModel):
             num_actions=num_actions,
         )
         
-    def save(self):
-        os.makedirs(self.policy_dir, exist_ok=True)
-        torch.save(self.policy_network.state_dict(), os.path.join(self.policy_dir, f"{self.policy_name}.pth"))
-        logger.info(f"saving to {self.policy_dir}")
+    def save(self, step=None):
+        if step is not None:
+            os.makedirs(os.path.join(self.policy_dir, f"ckpt_{step}"), exist_ok=True)
+            torch.save(self.policy_network.state_dict(), os.path.join(self.policy_dir, f"ckpt_{step}/{self.policy_name}.pth"))
+            logger.info(f"saving checkpoint at step {step}")
+        else:
+            os.makedirs(self.policy_dir, exist_ok=True)
+            torch.save(self.policy_network.state_dict(), os.path.join(self.policy_dir, f"{self.policy_name}.pth"))
+            logger.info(f"saving to {self.policy_dir}")
     
     def load(self):
         if os.path.exists(os.path.join(self.policy_dir, f"{self.policy_name}.pth")):
@@ -646,8 +651,12 @@ class AdaPGTS(Policy):
                 logger.info(f"step {step} best_reward: {best_reward}")
             if step % 50 == 0:
                 plot_reward(reward_hist, 10, os.path.join(self.policy.policy_dir, f"{self.policy.policy_name}.png"))
+            if hasattr(training_config, "save_freq") and (step+1) % training_config.save_freq == 0:
+                self.policy.save(step=step)
                 
         if training_config.save_last:
             self.policy.save()
             
         plot_reward(reward_hist, 10, os.path.join(self.policy.policy_dir, f"{self.policy.policy_name}.png"))
+        
+        torch.save(reward_hist, os.path.join(self.policy.policy_dir, "reward_history.pth"))
