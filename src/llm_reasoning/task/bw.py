@@ -6,6 +6,7 @@ from pydantic import ConfigDict
 import torch
 import math
 from statistics import mean
+from collections import defaultdict, Counter
 
 from llm_reasoning.task.base import Task, Solution, Action, State
 from llm_reasoning.llm.base import LLM, LLMResponse, InferenceConfig
@@ -244,11 +245,17 @@ class Blocks(Task):
         # only one answer
         elif len(solutions) == 1:
             generated_plan = solutions[0].text
-            return answer.evaluate(self.data.data_dir, self.data.config_file, self.data.domain_file, generated_plan)
         
-        else:
-            results = []
+        # multiple answers with weights
+        elif all(solution.weight is not None for solution in solutions):
+            weights = defaultdict(float)
             for solution in solutions:
-                res = answer.evaluate(self.data.data_dir, self.data.config_file, self.data.domain_file, solution.text)
-                results.append(res)
-            return any(results)
+                weights[solution.text] += solution.weight
+            generated_plan = max(weights.items(), key=lambda x: x[1])[0]
+        
+        # multiple answers without weights
+        else:
+            answer_counts = Counter([solution.text for solution in solutions])
+            generated_plan = answer_counts.most_common(1)[0][0]
+        
+        return answer.evaluate(self.data.data_dir, self.data.config_file, self.data.domain_file, generated_plan)

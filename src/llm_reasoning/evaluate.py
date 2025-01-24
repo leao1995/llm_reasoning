@@ -38,7 +38,7 @@ def evaluate(configs: OmegaConf, task: Task, policy: Policy):
     outputs = []
     auxiliary = []
     metrics = []
-    for index in tqdm(range(task.size), total=task.size, desc="evaluating"):
+    for index in tqdm(range(configs.experiment.start_idx, task.size), total=task.size, desc="evaluating"):
         init_state = task.init(index)
         solutions, info = policy.run(init_state)
         metric = task.eval_solution(init_state.answer, solutions)

@@ -651,7 +651,7 @@ class AdaPGTS(Policy):
                 logger.info(f"step {step} best_reward: {best_reward}")
             if step % 50 == 0:
                 plot_reward(reward_hist, 10, os.path.join(self.policy.policy_dir, f"{self.policy.policy_name}.png"))
-            if hasattr(training_config, "save_freq") and (step+1) % training_config.save_freq == 0:
+            if training_config.save_freq is not None and (step+1) % training_config.save_freq == 0:
                 self.policy.save(step=step)
                 
         if training_config.save_last:
